@@ -1,0 +1,125 @@
+{
+  "engine": "Godot 4.7.2.stable.official.ed1daf0bf",
+  "blender": "4.5.14 LTS",
+  "private_repository": "https://github.com/jrodiger/zombie-slop-assets",
+  "private_visibility_verified": true,
+  "asset_commit": "74a6c975a38024bb88b54067c68399fc6bbb9ed9",
+  "private_push": "Commit and LFS objects acknowledged by GitHub; main head verified via API. Initial 42 objects / 35 MB plus a 1.5 MB repaired zombie checkpoint; no paid overages enabled.",
+  "packs": [
+    {
+      "name": "Kenney City Kit (Suburban)",
+      "version": "2.0",
+      "source": "https://kenney.nl/assets/city-kit-suburban",
+      "license": "CC0-1.0",
+      "license_texts": "downloads/suburban/extracted/License.txt and CC0-1.0.txt; copied into workspace/assets/licenses",
+      "archive_sha256": "5869c35cf30b1c87bdb2d197b6d325eebadd2ef08ea27f04797e8e08d77a9a39",
+      "files_used": [
+        "Models/GLB format/building-type-a.glb",
+        "Models/GLB format/building-type-c.glb",
+        "Models/GLB format/building-type-e.glb",
+        "Models/GLB format/building-type-h.glb",
+        "Models/GLB format/building-type-k.glb",
+        "Models/GLB format/building-type-n.glb",
+        "Models/GLB format/Textures/colormap.png"
+      ],
+      "treatment": "Uniform 3.4 scale, world transforms defined in game/world.gd; pristine source remains unchanged."
+    },
+    {
+      "name": "Quaternius Zombie Apocalypse Kit",
+      "version": "March 2024",
+      "source": "https://quaternius.com/packs/zombieapocalypsekit.html",
+      "license": "CC0-1.0 per author",
+      "formats_inspected": [
+        "Blend",
+        "FBX",
+        "OBJ",
+        "glTF"
+      ],
+      "contents_inspected": [
+        "Characters_Matt.gltf",
+        "Characters_Matt_SingleWeapon.gltf",
+        "Zombie_Basic.gltf",
+        "Pistol.gltf",
+        "Couch.gltf",
+        "Chest.gltf",
+        "Vehicle_Pickup.gltf"
+      ],
+      "status": "Not downloaded: author Google Drive reports quota exceeded. Required originals location: downloads/zombie. No Quaternius character use claimed."
+    },
+    {
+      "name": "Quaternius Survival Pack",
+      "version": "September 2020",
+      "source": "https://quaternius.com/packs/survival.html",
+      "license": "CC0-1.0 per author",
+      "formats_inspected": [
+        "Blend",
+        "FBX",
+        "OBJ"
+      ],
+      "contents_inspected": [
+        "Radio.blend",
+        "FirstAidKit.blend",
+        "Pistol_1.blend",
+        "Bandages.blend"
+      ],
+      "status": "Not downloaded: Google Drive quota exceeded. Expected location downloads/survival."
+    },
+    {
+      "name": "Quaternius Ultimate Nature Pack",
+      "version": "June 2019",
+      "source": "https://quaternius.com/packs/ultimatenature.html",
+      "license": "CC0-1.0 per author",
+      "formats_inspected": [
+        "Blend",
+        "FBX",
+        "OBJ"
+      ],
+      "contents_inspected": [
+        "CommonTree_1.blend",
+        "BirchTree_1.blend",
+        "Bush_1.blend"
+      ],
+      "status": "Not downloaded: Google Drive quota exceeded. Expected location downloads/nature."
+    },
+    {
+      "name": "ITHappy Apocalypse Free",
+      "version": "1.1 (2026-09-09)",
+      "source": "https://ithappystudios.com/free/apocalypse-free/",
+      "license_source": "https://ithappystudios.com/type-of-licenses/",
+      "status": "Not downloaded: requires authenticated account checkout and verification/preservation of full free-usage license. No ITHappy characters used or asset upload performed. Expected location downloads/ithappy."
+    }
+  ],
+  "original_assets": {
+    "author": "Zombie Slop project / Jonathan Rodiger",
+    "license": "All rights reserved; separate from MIT code",
+    "editable_sources": "Sibling private checkout: 21 .blend files + recipe.json. Character rigs contain named hand.R socket and eight clips: Idle, Walk, Run, Aim, Shoot, Reload, Attack, Death. Original pistol is attached at runtime; original clips avoid cross-rig retargeting.",
+    "generator": "scripts/create_assets.py",
+    "export": "Blender background explicit Y-up GLB, action export, mesh joining for runtime surfaces; swinging DoorPivot stays separate. Outputs regenerated to external generated/ folder. Generator refuses existing editable sources unless --replace-existing is explicit; --only zombie permits a focused checkpoint repair. Existing private sources are reproducibly exported without saving changes by scripts/export_assets.py; every source hash is checked.",
+    "audio": "Seven original deterministic PCM effects/ambient clips, 22050Hz mono; generator seed 7 and editable synthesis parameters. No downloaded audio/font assets.",
+    "files": [
+      "survivor",
+      "zombie",
+      "plant",
+      "radio",
+      "guitar",
+      "chair",
+      "table",
+      "shelf",
+      "storage",
+      "foundation",
+      "wall",
+      "door",
+      "barricade",
+      "roof",
+      "house",
+      "tree",
+      "bush",
+      "grass",
+      "car",
+      "pistol",
+      "crate"
+    ],
+    "limitations": "Original temporary characters replace preferred Quaternius characters only because requested downloads were blocked. Selected art-pack integration remains incomplete."
+  },
+  "public_asset_files": []
+}
