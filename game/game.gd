@@ -33,7 +33,7 @@ var sound_index:int=0
 var ambience:AudioStreamPlayer
 var completed_announced:bool=false
 func _ready():
- if "--integration" in OS.get_cmdline_user_args():save_path="user://integration-survival.json"
+ if "--integration" in OS.get_cmdline_user_args() or "--verify-load" in OS.get_cmdline_user_args():save_path="user://integration-survival.json"
  if "--benchmark" in OS.get_cmdline_user_args():save_path="user://benchmark-survival.json"
  inputs();load_settings();create_world()
  ui=Hud.new();add_child(ui);ui.configure(self);ui.start_screen();apply_settings()
@@ -41,6 +41,7 @@ func _ready():
  ambience=AudioStreamPlayer.new();ambience.stream=load("res://assets/ambient.wav");ambience.volume_db=-9;add_child(ambience);ambience.finished.connect(func():ambience.play());ambience.play()
  if "--integration" in OS.get_cmdline_user_args():call_deferred("integration")
  if "--benchmark" in OS.get_cmdline_user_args():call_deferred("benchmark")
+ if "--verify-load" in OS.get_cmdline_user_args():call_deferred("verify_load")
 func create_world():
  world=World.new();add_child(world);world.configure(self)
  player=Player.new();add_child(player);player.configure(self);player.position=Vector3(-24,.2,22);player.yaw=PI;player.visual.rotation.y=0
@@ -164,7 +165,11 @@ func apply_settings():
  AudioServer.set_bus_volume_db(0,linear_to_db(maxf(.001,float(state.settings.volume))))
  if world!=null and world.sun!=null:world.sun.shadow_enabled=bool(state.settings.shadows)
 func quit_game():
- save_settings();get_tree().quit()
+ save_settings();finish_run()
+func finish_run(code:int=0):
+ if ambience!=null:ambience.stop();ambience.stream=null
+ for speaker in sound_players:speaker.stop();speaker.stream=null
+ get_tree().call_deferred("quit",code)
 func toast(value:String):
  if ui!=null:ui.toast(value)
 func sound(name:String,volume:float=1):
@@ -268,6 +273,7 @@ func validate_placement(kind:String,at:Vector3,yaw:float,ident:int=-1) -> String
  var offsets=[Vector3.ZERO]
  if catalog.built(kind) and kind!="roof":
   offsets=[Vector3(-size.x*.35,0,-size.z*.35),Vector3(size.x*.35,0,size.z*.35)]
+  if kind in ["wall","door","barricade"]:offsets=[Vector3(-size.x*.35,0,0),Vector3(size.x*.35,0,0)]
  for offset in offsets:
   var point=at+Basis(Vector3.UP,yaw)*offset
   var ray=PhysicsRayQueryParameters3D.create(point+Vector3.UP*.06,point-Vector3.UP*.13,1,excluded)
@@ -311,10 +317,14 @@ func heading() -> String:
  return directions[posmod(roundi(player.yaw/(PI/4)),8)]
 func integration():
  var script=load("res://tests/integration.gd").new();add_child(script);var code=await script.run(self)
- script.queue_free();await get_tree().process_frame;get_tree().quit(code)
+ script.queue_free();await get_tree().process_frame;finish_run(code)
 func benchmark():
  var script=load("res://tests/benchmark.gd").new();add_child(script);await script.run(self)
- script.queue_free();await get_tree().process_frame;get_tree().quit()
+ script.queue_free();await get_tree().process_frame;finish_run()
+func verify_load():
+ var script=load("res://tests/integration.gd").new();add_child(script)
+ var code=await script.verify_relaunch(self)
+ script.queue_free();await get_tree().process_frame;finish_run(code)
 
 func report_dir() -> String:
  var root=OS.get_environment("ZOMBIE_REPORT_DIR")

@@ -16,7 +16,7 @@ All defaults are relative to the current user's home, not a committed machine-sp
 ~/Documents/ZombieSlop/tools/           pinned Godot, Blender, CLI utilities
 ```
 
-Use the sibling asset checkout; verify its remote identity and **private visibility before every first upload**. At initial implementation GitHub CLI was unauthenticated: local commits are protected by LFS, but are **not an off-machine backup**. Do not change billing or authorize paid LFS overages.
+Use the sibling asset checkout; verify its remote identity and **private visibility before every first upload**. The matching private commit and all 42 LFS objects were pushed and verified during implementation; `git lfs fsck` passed. Pristine downloads still need a separate off-machine backup. Do not change billing or authorize paid LFS overages.
 
 ## Bootstrap
 
@@ -42,7 +42,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 
    Git LFS tracking is committed before the first `.blend` commit. Do not put private asset LFS pointers in the public checkout.
 
-5. Prefer the matching asset revision recorded in `docs/ASSETS.json`. The generator is for creating/re-exporting original assets, **not for overwriting hand-edited sources**. Before substantial changes commit the working asset checkpoint. Preserve existing sources, then export into a separate output directory. To recreate this first original asset set from code:
+5. Prefer the matching asset revision recorded in `docs/ASSETS.json`. The generator creates original assets and refuses existing `.blend` files. Export hand-edited sources separately; to deliberately recreate a checkpointed original, pass `--replace-existing`, optionally with `--only zombie` or `--only survivor`. Before substantial changes commit the working asset checkpoint. Preserve existing sources, then export into a separate output directory. To recreate this first original asset set from code:
 
    ```sh
    "$HOME/Documents/ZombieSlop/tools/Blender.app/Contents/MacOS/Blender" \
@@ -68,6 +68,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 ./scripts/build.sh Windows
 python3 scripts/test_source.py --godot "$HOME/Documents/ZombieSlop/tools/Godot.app/Contents/MacOS/Godot"
 ./scripts/run.sh -- --integration
+./scripts/run.sh -- --verify-load
 ```
 
 The first three produce only **local external builds**, including their embedded assets. They must not be added to the public repository, LFS, GitHub releases, or CI artifacts. macOS exports are ad-hoc signed for local use, not notarized. Windows/Linux are cross-exportable; run them on their respective hardware before marking them tested. Steam Deck controls and Android are targets, not verified platforms.
@@ -78,13 +79,13 @@ A ten-minute benchmark is included in the exported binary:
 "$HOME/Documents/ZombieSlop/builds/Zombie Slop.app/Contents/MacOS/Zombie Slop" -- --benchmark
 ```
 
-It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed objects. It repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks.
+It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed objects. Add `--benchmark-low` after `--benchmark` to disable sun shadows, or `--benchmark-short` for a 60-second diagnosis. Run it alone, without another graphical test. The ten-minute run repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks. Run `--verify-load` in a fresh process after `--integration` to compare the exact saved base and contents against the prior process's expected arrangement.
 
 ## Backups and matching revisions
 
 - Back up the entire pristine downloads folder (including archives, licenses and SOURCE.json checksums) to a user-selected external drive or existing cloud backup.
 - Back up the private repository with its `.git/lfs/objects` **and** working source files. Git pointers alone cannot restore binary sources. Maintain a pushed private remote and a separate backup of the originals.
-- `scripts/backup.py --destination PATH` creates a complete timestamped local archive for copying to that backup location. It never selects or configures a paid service.
+- `scripts/backup.py --destination PATH --assets PATH` creates a complete timestamped local archive for copying to that backup location. It never selects or configures a paid service.
 - For private pushes use normal Git/Git LFS authentication; verify the repository is private, `git lfs fsck`, push the commit and LFS objects, then verify both. `git lfs ls-files --size` gives local source sizes; inspect GitHub's account LFS usage before enabling ongoing uploads. A rejected or unpushed push is not a backup.
 - Record `git rev-parse HEAD` from the private asset checkout in the public asset manifest after local Blender/Godot inspection and tests. Never apply public MIT to third-party assets.
 - Before every public push run `python3 scripts/check_source.py`, `git diff --cached --stat` and inspect the full staged file list. Never upload credentials or asset archives.

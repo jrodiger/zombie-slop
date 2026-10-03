@@ -11,19 +11,19 @@ import zipfile
 from pathlib import Path
 
 def fetch(url, path):
+    """Download an official archive only when the external cache is absent."""
     if not path.exists():
         print('Downloading', path.name, flush=True)
         with urllib.request.urlopen(url, timeout=120) as r, path.open('wb') as out:
             shutil.copyfileobj(r, out)
 
 def main():
+    """Install pinned official tools and export templates outside source."""
     p = argparse.ArgumentParser()
     p.add_argument('--root', type=Path, required=True)
     a = p.parse_args()
     root = a.root.expanduser().resolve()
     root.mkdir(parents=True, exist_ok=True)
-    if Path('/private/tmp/godot.zip').exists():
-        shutil.copy2('/private/tmp/godot.zip', root / 'godot.zip')
     fetch('https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_macos.universal.zip', root / 'godot.zip')
     subprocess.run(['ditto', '-xk', str(root / 'godot.zip'), str(root)], check=True)
     godot = root / 'Godot.app/Contents/MacOS/Godot'

@@ -103,7 +103,7 @@ func pause():
 func settings():
  open_panel("FIELD SETTINGS","Compatibility renderer · 1280 × 800 desktop target")
  var cap=CheckButton.new();cap.text="60 FPS cap (off = uncapped profiling)";cap.button_pressed=bool(game.state.settings.cap);cap.toggled.connect(func(on):game.state.settings.cap=on;game.apply_settings());panel_content.add_child(cap);cap.grab_focus()
- var shadows=CheckButton.new();shadows.text="Sun shadows";shadows.button_pressed=bool(game.state.settings.shadows);shadows.toggled.connect(func(on):game.state.settings.shadows=on;game.apply_settings());panel_content.add_child(shadows)
+ var shadows=CheckButton.new();shadows.text="Sun shadows (medium; off = low)";shadows.button_pressed=bool(game.state.settings.shadows);shadows.toggled.connect(func(on):game.state.settings.shadows=on;game.apply_settings());panel_content.add_child(shadows)
  panel_content.add_child(text("Mouse sensitivity",17));var sensitivity=HSlider.new();sensitivity.min_value=.2;sensitivity.max_value=3;sensitivity.step=.1;sensitivity.value=float(game.state.settings.sensitivity);sensitivity.value_changed.connect(func(value):game.state.settings.sensitivity=value);panel_content.add_child(sensitivity)
  panel_content.add_child(text("Sound volume",17));var volume=HSlider.new();volume.min_value=0;volume.max_value=1;volume.step=.05;volume.value=float(game.state.settings.volume);volume.value_changed.connect(func(value):game.state.settings.volume=value;game.apply_settings());panel_content.add_child(volume)
  button("BACK",func():game.save_settings();pause() if game.running else start_screen())

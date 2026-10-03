@@ -10,7 +10,7 @@ var health:float = 100.0
 var magazine:int = 12
 var next_id:int = 1
 var kills:int = 0
-var settings:Dictionary = {"cap":true,"shadows":true,"sensitivity":1.0,"volume":0.7}
+var settings:Dictionary = {"cap":true,"shadows":false,"sensitivity":1.0,"volume":0.7}
 var save_error:String = ""
 func _init():
  reset()

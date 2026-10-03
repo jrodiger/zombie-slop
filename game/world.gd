@@ -7,6 +7,7 @@ var loot:Array=[]
 var safe_center=Vector3(-24,0,30)
 var rng=RandomNumberGenerator.new()
 var sun:DirectionalLight3D
+var box_batches:Dictionary={}
 func configure(owner_game):
  game=owner_game;rng.seed=4815
  navigation=AStarGrid2D.new();navigation.region=Rect2i(-76,-76,152,152);navigation.cell_size=Vector2.ONE;navigation.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;navigation.update()
@@ -65,6 +66,7 @@ func configure(owner_game):
  label("SUPPLIES →",Vector3(8,2,-20),Color("efb479"),32)
  box(Vector3(0,1.7,-71),Vector3(11,3.4,.5),Color("5c6857"),true)
  for boundary in [[Vector3(-75,3,0),Vector3(1,6,150)],[Vector3(75,3,0),Vector3(1,6,150)],[Vector3(0,3,-75),Vector3(150,6,1)],[Vector3(0,3,75),Vector3(150,6,1)]]:collider(boundary[0],boundary[1],true)
+ build_box_batches()
  seed_loot()
  for i in range(18):
   var spawn=Vector3(rng.randf_range(-9,12),.2,rng.randf_range(-65,-5))
@@ -77,8 +79,18 @@ func environment():
  env.environment=e;add_child(env)
  sun=DirectionalLight3D.new();sun.rotation_degrees=Vector3(-42,-35,0);sun.light_color=Color("fff0d9");sun.light_energy=.75;sun.shadow_enabled=bool(game.state.settings.shadows);sun.directional_shadow_max_distance=55;add_child(sun)
 func box(at:Vector3,size:Vector3,color:Color,solid:bool,nav:bool=true):
- var mesh=MeshInstance3D.new();var b=BoxMesh.new();b.size=size;mesh.mesh=b;var material=StandardMaterial3D.new();material.albedo_color=color;material.roughness=1;mesh.material_override=material;mesh.position=at;add_child(mesh)
+ if not box_batches.has(color):box_batches[color]=[]
+ box_batches[color].append(Transform3D(Basis.IDENTITY.scaled(size),at))
  if solid:collider(at,size,nav)
+func build_box_batches():
+ # Shared unit boxes preserve authored geometry while batching by material.
+ for color in box_batches:
+  var mesh=BoxMesh.new();mesh.size=Vector3.ONE
+  var material=StandardMaterial3D.new();material.albedo_color=color;material.roughness=1;mesh.material=material
+  var mm=MultiMesh.new();mm.transform_format=MultiMesh.TRANSFORM_3D;mm.mesh=mesh;mm.instance_count=box_batches[color].size()
+  for i in range(mm.instance_count):mm.set_instance_transform(i,box_batches[color][i])
+  var instance=MultiMeshInstance3D.new();instance.multimesh=mm;add_child(instance)
+ box_batches.clear()
 func collider(at:Vector3,size:Vector3,nav:bool):
  var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;var c=CollisionShape3D.new();var s=BoxShape3D.new();s.size=size;c.shape=s;body.add_child(c);add_child(body);body.position=at
  if nav and at.y+size.y*.5>.6 and at.y-size.y*.5<1.6:
@@ -155,6 +167,9 @@ func route(from:Vector3,to:Vector3) -> PackedVector3Array:
   for offset in [Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1),Vector2i(2,0),Vector2i(-2,0)]:
    if navigation.is_in_boundsv(last+offset) and not navigation.is_point_solid(last+offset):last+=offset;break
  if navigation.is_point_solid(first):return result
+ # Partial searches toward a still-solid destination can scan the whole grid.
+ # Wait for a reachable target instead of repeating that work for every zombie.
+ if navigation.is_point_solid(last):return result
  for point in navigation.get_point_path(first,last,true):result.append(Vector3(point.x,.2,point.y))
  return result
 func alert_zombies(at:Vector3,radius:float):

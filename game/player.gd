@@ -24,7 +24,9 @@ func configure(owner_game):
   var hand=BoneAttachment3D.new();hand.bone_name="hand.R";skeleton.add_child(hand)
   var weapon=game.assets.model("pistol");hand.add_child(weapon)
   # Custom grip exported in game axes; attachment follows the hand's local bone frame.
-  weapon.rotation.x=PI/2
+  var hand_rest=skeleton.get_bone_global_rest(skeleton.find_bone("hand.R"))
+  weapon.basis=hand_rest.basis.inverse()
+  weapon.position=hand_rest.basis.inverse()*Vector3(0,.045,.015)
   flash=MeshInstance3D.new();var mesh=SphereMesh.new();mesh.radius=.06;mesh.height=.12;flash.mesh=mesh;flash.position=Vector3(0,.05,.34);weapon.add_child(flash)
   var material=StandardMaterial3D.new();material.albedo_color=Color(1,.8,.25);material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;flash.material_override=material;flash.visible=false
  pivot=Node3D.new();add_child(pivot);camera=Camera3D.new();pivot.add_child(camera);camera.current=true;camera.fov=68;camera.far=170
@@ -49,7 +51,7 @@ func _physics_process(delta):
  sprint_energy=clampf(sprint_energy+(-24 if sprint else 18)*delta,0,100)
  velocity.x=move_toward(velocity.x,direction.x*speed,delta*22);velocity.z=move_toward(velocity.z,direction.z*speed,delta*22)
  if not is_on_floor():velocity.y-=20*delta
- elif Input.is_action_just_pressed("jump"):velocity.y=6
+ elif Input.is_action_just_pressed("jump") and game.placement_kind=="":velocity.y=6
  else:velocity.y=0.0
  move_and_slide()
  if global_position.y < -5:game.recover_player()
@@ -67,9 +69,9 @@ func _physics_process(delta):
   reload_left=maxf(0,reload_left-delta)
   if reload_left==0:
    var amount=mini(12-game.state.magazine,int(game.state.inventory.ammo));game.state.inventory.ammo-=amount;game.state.magazine+=amount;game.toast("Reloaded")
- if Input.is_action_just_pressed("reload"):reload()
+ if Input.is_action_just_pressed("reload") and game.placement_kind=="":reload()
  if Input.is_action_pressed("fire") and game.placement_kind=="":shoot()
- if Input.is_action_just_pressed("heal"):heal()
+ if Input.is_action_just_pressed("heal") and game.placement_kind=="":heal()
  if reload_left>0:game.assets.animate(animation,"Reload",.08,false)
  elif shot_cooldown>.16:game.assets.animate(animation,"Shoot",.03,false)
  elif move.length()>.1:game.assets.animate(animation,"Run" if sprint else "Walk",.12)

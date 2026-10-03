@@ -17,9 +17,11 @@ PACKS = {
 }
 
 def read(url):
+    """Fetch author-provided bytes with a bounded network timeout."""
     return urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'}), timeout=90).read()
 
 def entries(folder):
+    """Read file names, IDs and folder markers from a Drive folder page."""
     page = read('https://drive.google.com/drive/folders/' + folder).decode()
     result = []
     for row in re.findall(r'<tr data-selectable.*?</tr>', page, re.S):
@@ -30,6 +32,7 @@ def entries(folder):
     return result
 
 def collect(folder, prefix=Path()):
+    """Recursively enumerate supported model and editable source formats."""
     files = []
     for ident, name, is_folder in entries(folder):
         print('Inspect', prefix / name, flush=True)
@@ -42,6 +45,7 @@ def collect(folder, prefix=Path()):
     return files
 
 def main():
+    """Preserve pristine author downloads, license text and checksums externally."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--originals', type=Path, required=True)
     parser.add_argument('--pack', choices=list(PACKS) + ['suburban', 'all'], default='all')
@@ -73,6 +77,7 @@ def main():
             source_url, folder = PACKS[pack]
             files = collect(folder)
             def download(entry):
+                """Reject HTML responses and record an asset download checksum."""
                 ident, rel = entry
                 path = dest / rel
                 path.parent.mkdir(parents=True, exist_ok=True)

@@ -4,7 +4,7 @@ Original low-poly source assets; outputs MUST stay outside the public repository
 import bpy,math,random,sys,argparse,json,wave,struct
 from pathlib import Path
 from mathutils import Vector
-p=argparse.ArgumentParser();p.add_argument('--assets',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
+p=argparse.ArgumentParser();p.add_argument('--assets',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--replace-existing',action='store_true');p.add_argument('--only',choices=['survivor','zombie']);a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
 source=Path(__file__).resolve().parents[1]
 for root in [a.assets.resolve(),a.out.resolve()]:
  if root==source or source in root.parents:raise SystemExit('Assets must remain outside public source.')
@@ -14,22 +14,33 @@ bpy.context.preferences.filepaths.auto_save_time=2
 bpy.context.preferences.filepaths.save_version=2
 palette={'wood':(0.34,0.23,0.13,1),'timber':(0.54,0.39,0.22,1),'cream':(0.69,0.67,0.49,1),'blue':(0.19,0.31,0.34,1),'green':(0.18,0.31,0.18,1),'leaf':(0.27,0.43,0.21,1),'leaf2':(0.35,0.47,0.21,1),'metal':(0.18,0.23,0.24,1),'dark':(0.065,0.09,0.095,1),'rust':(0.53,0.23,0.12,1),'skin':(0.63,0.43,0.3,1),'zskin':(0.43,0.53,0.31,1),'denim':(0.17,0.22,0.26,1),'red':(0.64,0.27,0.15,1),'glass':(0.3,0.46,0.48,1),'gold':(0.9,0.65,0.28,1)}
 materials={}
-def xyz(v):return (v[0],-v[2],v[1])
+def xyz(v):
+ """Convert Godot positions into Blender Z-up coordinates."""
+ return (v[0],-v[2],v[1])
 def mat(name):
+ """Reuse an original palette material with a rough surface."""
  if name not in materials:
   m=bpy.data.materials.new(name);m.diffuse_color=palette[name];m.use_nodes=True;m.node_tree.nodes.get('Principled BSDF').inputs['Base Color'].default_value=palette[name];m.node_tree.nodes.get('Principled BSDF').inputs['Roughness'].default_value=0.85;materials[name]=m
  return materials[name]
 def cube(name,pos,size,color='wood',angle=0):
+ """Create a colored cuboid with baked dimensions in game coordinates."""
  bpy.ops.mesh.primitive_cube_add(size=1,location=xyz(pos));o=bpy.context.object;o.name=name;o.scale=(size[0],size[2],size[1]);o.rotation_euler.z=-angle;o.data.materials.append(mat(color));bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);return o
 def sphere(name,pos,size,color='leaf'):
+ """Create a flat low-poly icosphere with baked game-axis dimensions."""
  bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=1,location=xyz(pos));o=bpy.context.object;o.name=name;o.scale=(size[0],size[2],size[1]);o.data.materials.append(mat(color));bpy.ops.object.transform_apply(location=False,rotation=False,scale=True);return o
 def cylinder(name,pos,radius,depth,color='wood',vertices=8):
+ """Create an upright low-poly cylinder in game coordinates."""
  bpy.ops.mesh.primitive_cylinder_add(vertices=vertices,radius=radius,depth=depth,location=xyz(pos));o=bpy.context.object;o.name=name;o.data.materials.append(mat(color));return o
 def reset():
+ """Clear generated objects and actions before creating the next asset."""
  bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
+ for action in list(bpy.data.actions):bpy.data.actions.remove(action)
 def export(name):
+ """Protect editable sources, save a checkpoint and export joined GLB meshes."""
+ target=a.assets/(name+'.blend')
+ if target.exists() and not a.replace_existing:raise SystemExit('Editable source already exists; checkpoint it before using --replace-existing: '+str(target))
  # Keep the .blend editable; join meshes by material into fewer draw surfaces for glTF.
- bpy.ops.wm.save_as_mainfile(filepath=str(a.assets/(name+'.blend')))
+ bpy.ops.wm.save_as_mainfile(filepath=str(target))
  meshes=[o for o in bpy.context.scene.objects if o.type=='MESH' and not (name=='door' and o.name in ('DoorLeaf','Handle'))]
  if meshes:
   bpy.ops.object.select_all(action='DESELECT')
@@ -39,9 +50,11 @@ def export(name):
  bpy.ops.export_scene.gltf(filepath=str(a.out/(name+'.glb')),export_format='GLB',export_animations=True,export_animation_mode='ACTIONS',export_yup=True)
  print('ASSET',name,flush=True)
 def plank_wall():
+ """Construct a three-meter timber wall from boards and braces."""
  for i in range(10):cube('Vertical plank',(-1.35+i*.3,1.25,0),(.27,2.5,.13),'timber')
  for y in [.35,2.1]:cube('Cross brace',(0,y,.09),(3,.12,.1))
 def character(zombie=False):
+ """Build an original rigidly weighted rig and eight named animation clips."""
  bpy.ops.object.armature_add();rig=bpy.context.object;rig.name='SurvivorRig' if not zombie else 'ZombieRig';bpy.ops.object.mode_set(mode='EDIT');bones=rig.data.edit_bones;bones.remove(bones[0])
  definitions=[('root',(0,0,0),(0,.2,0),None),('hips',(0,.82,0),(0,1.03,0),'root'),('spine',(0,1.03,0),(0,1.4,0),'hips'),('head',(0,1.4,0),(0,1.76,0),'spine'),('upper_arm.R',(-.27,1.4,0),(-.36,1.12,.16),'spine'),('forearm.R',(-.36,1.12,.16),(-.27,1.13,.42),'upper_arm.R'),('hand.R',(-.27,1.13,.42),(-.27,1.13,.55),'forearm.R'),('upper_arm.L',(.27,1.4,0),(.36,1.12,.16),'spine'),('forearm.L',(.36,1.12,.16),(.05,1.13,.44),'upper_arm.L'),('hand.L',(.05,1.13,.44),(.05,1.13,.54),'forearm.L'),('thigh.R',(-.15,.88,0),(-.15,.47,0),'hips'),('shin.R',(-.15,.47,0),(-.15,.1,0),'thigh.R'),('thigh.L',(.15,.88,0),(.15,.47,0),'hips'),('shin.L',(.15,.47,0),(.15,.1,0),'thigh.L')]
  for name,head,tail,parent in definitions:
@@ -87,9 +100,10 @@ def character(zombie=False):
  rig.animation_data.action=None
  for track in rig.animation_data.nla_tracks:track.mute=True
  bpy.context.scene.frame_set(1)
-reset();character();export('survivor')
-reset();character(True);export('zombie')
+if a.only in (None,'survivor'):reset();character();export('survivor')
+if a.only in (None,'zombie'):reset();character(True);export('zombie')
 for name in ['plant','radio','guitar','chair','table','shelf','storage','foundation','wall','door','barricade','roof','house','tree','bush','grass','car','pistol','crate']:
+ if a.only:continue
  reset()
  if name=='plant':
   cylinder('Terracotta',(0,.17,0),.2,.34,'rust');
@@ -167,4 +181,4 @@ for name,duration in [('shot',.19),('reload',.9),('pickup',.22),('hurt',.24),('s
   else:v=rng.uniform(-1,1)*.22*envelope*envelope
   samples.append(struct.pack('<h',int(max(-1,min(1,v))*32767)))
  with wave.open(str(a.out/(name+'.wav')),'wb') as f:f.setnchannels(1);f.setsampwidth(2);f.setframerate(rate);f.writeframes(b''.join(samples))
-(a.assets/'recipe.json').write_text(json.dumps({'generator':'scripts/create_assets.py','version':1,'blender':bpy.app.version_string,'palette':palette,'audio_seed':7,'notes':'Original editable models. Selected Quaternius downloads unavailable due Drive quota; these are temporary original stand-ins, not Quaternius assets.'},indent=2)+'\n')
+if not a.only:(a.assets/'recipe.json').write_text(json.dumps({'generator':'scripts/create_assets.py','version':1,'blender':bpy.app.version_string,'palette':palette,'audio_seed':7,'notes':'Original editable models. Selected Quaternius downloads unavailable due Drive quota; these are temporary original stand-ins, not Quaternius assets.'},indent=2)+'\n')

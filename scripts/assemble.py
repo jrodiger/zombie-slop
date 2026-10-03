@@ -4,9 +4,11 @@ import argparse,json,shutil,subprocess
 from pathlib import Path
 SOURCE=Path(__file__).resolve().parents[1]
 def outside(path,checkouts):
+ """Reject output folders located within either protected checkout."""
  for base in checkouts:
   if path==base or base in path.parents:raise ValueError('Runtime and outputs must be outside both checkouts.')
 def main():
+ """Validate external inputs and assemble a disposable Godot workspace."""
  p=argparse.ArgumentParser();p.add_argument('--assets',type=Path,default=SOURCE.parent/'zombie-slop-assets');p.add_argument('--home',type=Path,default=Path.home()/'Documents/ZombieSlop');a=p.parse_args()
  home=a.home.expanduser().resolve();private=a.assets.expanduser().resolve();runtime=home/'workspace';outside(home,[SOURCE,private]);outside(private,[SOURCE]);runtime.mkdir(parents=True,exist_ok=True)
  for name in ['game','tests']:

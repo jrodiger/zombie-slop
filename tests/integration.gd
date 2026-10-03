@@ -39,6 +39,9 @@ func run(owner_game):
  game.new_game();await wait(.5)
  check(game.running and not game.overlay,"Start enters playable scene")
  check(game.player.animation!=null and game.player.animation.get_animation_list().size()>=8,"Imported skeleton has eight animation clips")
+ var weapon=game.player.flash.get_parent()
+ check(weapon.global_basis.z.normalized().dot(game.player.visual.global_basis.z.normalized())>.98,"Weapon muzzle points along character forward")
+ check(weapon.global_basis.y.normalized().dot(Vector3.UP)>.98,"Weapon grip preserves upright orientation")
  var before=game.player.position
  for i in range(45):
   game.player.yaw=PI;Input.action_press("forward");await get_tree().physics_frame
@@ -48,6 +51,7 @@ func run(owner_game):
  check(game.player.aiming and game.player.camera.fov<68,"Aiming adjusts shoulder camera")
  Input.action_release("aim")
  var zombie=get_tree().get_nodes_in_group("zombies")[0]
+ check(zombie.animation.get_animation_list().has("Walk") and zombie.animation.get_animation_list().has("Attack"),"Zombie imports exact locomotion and attack clip names")
  # Target a real physics character with the actual camera raycast.
  game.player.position=Vector3(0,.2,14);game.player.yaw=0;game.player.pitch=0
  zombie.position=Vector3(.65,.2,5);zombie.velocity=Vector3.ZERO
@@ -72,6 +76,13 @@ func run(owner_game):
  var untouched=game.state.snapshot()
  game.begin_placement("plant");await wait(.1);game.cancel_placement()
  check(game.state.snapshot()==untouched,"Cancel preview leaves inventory and identity unchanged")
+ game.begin_placement("plant");game.state.health=75;game.state.magazine=11
+ for action in ["reload","heal","jump"]:Input.action_press(action)
+ for i in range(3):await get_tree().physics_frame
+ check(game.player.reload_left==0 and game.state.health==75 and game.state.inventory.medkit==1,"Placement input cannot reload or spend a healing item")
+ check(game.player.velocity.y<=0,"Placement rotation cannot also trigger a jump")
+ for action in ["reload","heal","jump"]:Input.action_release(action)
+ game.cancel_placement();game.state.health=100;game.state.magazine=12
  check(game.validate_placement("plant",Vector3(-30,.1,30),0)!="Ready to place","Occupied wall placement denied")
  var fern=await place("plant",Vector3(-28.3,.175,29),PI/3)
  check(game.state.inventory.plant==0,"Placed collectible consumed exactly once")
@@ -114,8 +125,21 @@ func run(owner_game):
  var initial_hp=float(barricade.get("hp",0))
  await wait(2.5)
  check(float(barricade.get("hp",0))<initial_hp,"Pursuing zombie attacks a blocking barricade")
+ # Build a real supported freestanding shelter, then reject an unsupported roof.
+ game.state.inventory.wood+=30
+ var shelter=Vector3(-36,.015,40)
+ for x in [-36,-38,-34]:
+  game.player.position=Vector3(x,.3,37)
+  if game.validate_placement("foundation",Vector3(x,.015,40),0)=="Ready to place":shelter.x=x;break
+ await place("foundation",shelter)
+ await place("wall",shelter+Vector3(0,.215,-1.45))
+ await place("wall",shelter+Vector3(0,.215,1.45))
+ await place("roof",shelter+Vector3(0,2.73,0))
+ game.player.position=shelter+Vector3(0,.3,-3)
+ check(game.validate_placement("roof",shelter+Vector3(4,2.73,0),0)!="Ready to place","Unsupported roof is denied")
  game.player.position=Vector3(-25,.3,29);game.save_game(false)
  var snapshot=game.state.snapshot();check(game.state.save_to(game.save_path),"Save furnished base to isolated integration file")
+ var expected=FileAccess.open(game.report_dir()+"/relaunch-expected.json",FileAccess.WRITE);expected.store_string(JSON.stringify(snapshot,"  ",false,true));expected.close()
  game.state.reset();check(game.state.load_from(game.save_path),"Load furnished base")
  check(arrangement_matches(game.state.snapshot(),snapshot),"Object identity, arrangement and container contents survive save/load within 1e-9 radians")
  game.rebuild();await wait(.3)
@@ -150,3 +174,21 @@ func arrangement_matches(a:Dictionary,b:Dictionary) -> bool:
 
 func watchdog_timeout():
  push_error("Integration watchdog timeout");get_tree().quit(2)
+
+func verify_relaunch(owner_game) -> int:
+ game=owner_game
+ var path=game.report_dir()+"/relaunch-expected.json"
+ check(FileAccess.file_exists(path),"Prior process wrote expected furnished base")
+ if failures:return 1
+ var expected=JSON.parse_string(FileAccess.get_file_as_string(path))
+ # Normalize the JSON numeric representation through the same state loader.
+ var reference=game.State.new()
+ check(reference.restore(expected),"Expected arrangement validates")
+ game.load_game();await wait(.5)
+ check(game.running,"Fresh graphical process loads integration save")
+ check(arrangement_matches(game.state.snapshot(),reference.snapshot()),"Exact identities, arrangement and chest contents survive quit and relaunch")
+ check(get_tree().get_nodes_in_group("placed").size()==reference.objects.size(),"Relaunch restores one collider per placed identity")
+ check(game.world.loot.filter(func(item):return item.id=="fern").is_empty(),"Relaunch preserves collected world identity")
+ await capture("08-relaunched-base")
+ print("RELAUNCH TESTS: %d checks, %d failures"%[checks,failures])
+ return 1 if failures else 0
