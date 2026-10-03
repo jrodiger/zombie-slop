@@ -16,7 +16,7 @@ All defaults are relative to the current user's home, not a committed machine-sp
 ~/Documents/ZombieSlop/tools/           pinned Godot, Blender, CLI utilities
 ```
 
-Use the sibling asset checkout; verify its remote identity and **private visibility before every first upload**. The matching private commit and all 42 LFS objects were pushed and verified during implementation; `git lfs fsck` passed. Pristine downloads still need a separate off-machine backup. Do not change billing or authorize paid LFS overages.
+Use the sibling asset checkout; verify its remote identity and **private visibility before every first upload**. The matching private commit and the initial LFS sources were pushed and verified during implementation; `git lfs fsck` passed. Pristine downloads still need a separate off-machine backup. Do not change billing or authorize paid LFS overages.
 
 ## Bootstrap
 
@@ -50,6 +50,18 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
      --assets ../zombie-slop-assets --out "$HOME/Documents/ZombieSlop/generated"
    ```
 
+   Download the full free [Quaternius Zombie Apocalypse Kit](https://quaternius.com/packs/zombieapocalypsekit.html) through the author’s Google Drive folder. Preserve the complete ZIP and extract it under `downloads/zombie-apocalypse/extracted`, including `Zombie_Atlas.png`. The matching private checkpoint already includes adapted editable sources; reproduce those outputs after the original-assets export:
+
+   ```sh
+   "$HOME/Documents/ZombieSlop/tools/Blender.app/Contents/MacOS/Blender" \
+     --background --python scripts/adapt_quaternius.py -- \
+     --pack "$HOME/Documents/ZombieSlop/downloads/zombie-apocalypse/extracted" \
+     --assets ../zombie-slop-assets --out "$HOME/Documents/ZombieSlop/generated" \
+     --export-only
+   ```
+
+   To create the Quaternius working sources in a new private checkout, omit `--export-only`; existing working files are protected from overwrite. The adapter preserves author weapon sockets, packs the atlas into editable Blender files, adds same-rig gestures, joins the zombie atlas mesh, normalizes props, and bakes constraints during export.
+
    For a deliberately new original source set, use `create_assets.py` with a new external asset folder; replacing checkpointed originals requires `--replace-existing`. The exporter opens the matching private `.blend` files, joins only in memory, checks source hashes and synthesizes the original audio.
 
    Blender autosave is enabled in the generation process at two minutes and saved backup versions are set to two. For interactive work enable the same settings in Blender Preferences → Save & Load. Preserve the `.blend` files with editable rigs/actions/materials. The generator exports GLB explicitly with Y-up, eight animation actions, no texture dependencies for original models, and joins meshes for fewer draw calls. The swinging door keeps its pivot separate. Original deterministic audio is synthesized with seed 7; editable parameters are in the generator and private `recipe.json`.
@@ -81,7 +93,7 @@ A ten-minute benchmark is included in the exported binary:
 "$HOME/Documents/ZombieSlop/builds/Zombie Slop.app/Contents/MacOS/Zombie Slop" -- --benchmark
 ```
 
-It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed objects. Add `--benchmark-low` after `--benchmark` to disable sun shadows, or `--benchmark-short` for a 60-second diagnosis. Run it alone, without another graphical test. The ten-minute run repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks. Run `--verify-load` in a fresh process after `--integration` to compare the exact saved base and contents against the prior process's expected arrangement.
+It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed objects. Add `--benchmark-low` after `--benchmark` to disable sun shadows, `--benchmark-capped` for real 60 FPS pacing, or `--benchmark-short` for a 60-second diagnosis. Run it alone, without another graphical test. The ten-minute run repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks. Run `--verify-load` in a fresh process after `--integration` to compare the exact saved base and contents against the prior process's expected arrangement.
 
 ## Backups and matching revisions
 
@@ -94,6 +106,5 @@ It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed o
 
 ## Selected pack status
 
-The requested Quaternius Zombie Apocalypse Kit, Survival Pack and Ultimate Nature Pack are CC0 on their author pages. Formats and folder contents were inspected. Their Google Drive files returned **quota exceeded** during setup; no successful downloads of those packs are claimed. `fetch_assets.py --pack zombie|survival|nature` reports missing downloads instead of storing HTML as an asset. Once available, adopt Quaternius characters and suitable props after verifying skeleton names, clip orientation and weapon sockets; rigs must not be assumed interchangeable.
-
-ITHappy Apocalypse Free 1.1 offers Blender/FBX/OBJ/GLB and requires an account checkout. Its [free usage policy](https://ithappystudios.com/type-of-licenses/) prohibits as-is redistribution and derivatives outside a final product. It is not downloaded or privately uploaded here. No ITHappy characters are used. Account checkout/license verification is needed before incorporation. Original stand-ins keep the first prototype playable, but the requested selected-pack art direction remains incomplete.
+The Zombie Apocalypse Kit is installed from a complete manual Google Drive download, including editable Blender sources, its atlas and CC0 license. The runtime uses Matt, Zombie Basic, three firearms, a pickup truck and a chest. Survival and Ultimate Nature remain pending manual downloads after automated Drive quota failures. Their free archives can be put in the external `downloads/manual-inbox/survival/` and `downloads/manual-inbox/ultimate-nature/` folders. No quota bypass or paid purchase is used.
+ITHappy Apocalypse Free 1.1 offers Blender/FBX/OBJ/GLB and requires an account checkout. Its [free usage policy](https://ithappystudios.com/type-of-licenses/) prohibits as-is redistribution and derivatives outside a final product. It is not downloaded or privately uploaded here. No ITHappy characters are used. Account checkout/license verification is needed before incorporation. Original construction/furniture/vegetation remain while the other requested packs are pending.

@@ -47,6 +47,23 @@ func _initialize():
  check(not restored.restore(invalid),"Nonfinite transform rejected")
  invalid=data.duplicate(true);invalid.magazine=12.5
  check(not restored.restore(invalid),"Fractional ammo rejected")
+ var legacy=data.duplicate(true);legacy.version=1;legacy.erase("weapons");legacy.erase("equipped");legacy.inventory.erase("rifle_ammo");legacy.inventory.erase("shells")
+ var migrated=State.new()
+ check(migrated.restore(legacy),"Version one progress migrates")
+ check(migrated.objects==data.objects and migrated.collected==data.collected and migrated.magazine==12,"Migration preserves arrangement, collected items and pistol rounds")
+ check(migrated.inventory.rifle_ammo==0 and migrated.inventory.shells==0,"Migration adds empty new ammo reserves")
+ check(migrated.collect("rifle-pickup","rifle",1) and migrated.weapons.rifle==0,"Looted rifle starts unloaded")
+ check(not migrated.collect("rifle-pickup","rifle",1),"Weapon pickup cannot duplicate")
+ check(migrated.equip("rifle"),"Owned rifle can be equipped")
+ migrated.magazine=20;migrated.equip("pistol");migrated.magazine=7;migrated.equip("rifle")
+ check(migrated.magazine==20 and migrated.weapons.pistol==7,"Switching retains each weapon magazine")
+ var gun_save=migrated.snapshot();var gun_load=State.new()
+ check(gun_load.restore(gun_save) and gun_load.snapshot()==gun_save,"Equipped weapon and magazines persist exactly")
+ check(not gun_load.equip("shotgun"),"Cannot equip an uncollected weapon")
+ var bad_gun=gun_save.duplicate(true);bad_gun.weapons.rifle=31;bad_gun.magazine=31
+ check(not gun_load.restore(bad_gun),"Overfilled weapon magazine rejected")
+ bad_gun=gun_save.duplicate(true);bad_gun.weapons.rifle=19
+ check(not gun_load.restore(bad_gun),"Conflicting active magazine rejected")
  var path="user://test-progress.json"
  check(restored.save_to(path),"Save writes")
  restored.inventory.wood+=1

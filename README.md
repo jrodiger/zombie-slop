@@ -11,7 +11,7 @@ An original offline, third-person zombie survival prototype in an overgrown subu
 ./scripts/build.sh macOS     # export a local native macOS build
 ```
 
-A fresh source clone requires the external asset setup. The script reports missing files and sources clearly. Selected Quaternius downloads were blocked by the author's Drive quota; this iteration uses original editable stand-ins plus Kenney suburban buildings. ITHappy is pending account checkout. Those pack substitutions are documented, not represented as completed integration.
+A fresh source clone requires the external asset setup. The script reports missing files and sources clearly. Quaternius Zombie Apocalypse characters, three firearms, pickup trucks and chests are installed from a complete manual download. Kenney provides suburban building shells; original construction, furniture and vegetation remain. Survival/Nature are pending manual downloads and ITHappy is pending license/account setup. The exact asset sources and matching private checkpoint are documented.
 
 The starter objective asks you to collect supplies and a fern, return home, place your find, and build a barricade or chest. Then keep playing the sandbox. Six collectible furniture/decor types and six construction recipes use transactional placement, recovery/refunds, storage and local persistence.
 

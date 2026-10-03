@@ -1,13 +1,17 @@
 extends RefCounted
 const Catalog = preload("res://game/catalog.gd")
-const VERSION = 1
+const VERSION = 2
 var inventory:Dictionary = {}
 var objects:Array = []
 var collected:Array = []
 var objective:Dictionary = {"supplies":false,"collectible":false,"returned":false,"decorated":false,"built":false}
 var player_position:Array = [-24.0,0.35,26.0]
 var health:float = 100.0
-var magazine:int = 12
+var weapons:Dictionary = {"pistol":12}
+var equipped:String = "pistol"
+var magazine:int:
+ get:return int(weapons.get(equipped,0))
+ set(value):weapons[equipped]=value
 var next_id:int = 1
 var kills:int = 0
 var settings:Dictionary = {"cap":true,"shadows":false,"sensitivity":1.0,"volume":0.7}
@@ -15,11 +19,11 @@ var save_error:String = ""
 func _init():
  reset()
 func reset():
- inventory={"wood":0,"scrap":0,"ammo":48,"medkit":2}
+ inventory={"wood":0,"scrap":0,"ammo":48,"medkit":2,"rifle_ammo":0,"shells":0}
  for k in Catalog.FURNITURE: inventory[k]=0
  objects=[]; collected=[]; next_id=1; kills=0
  objective={"supplies":false,"collectible":false,"returned":false,"decorated":false,"built":false}
- player_position=[-24.0,0.35,26.0]; health=100.0; magazine=12
+ player_position=[-24.0,0.35,26.0]; health=100.0; weapons={"pistol":12};equipped="pistol"
 func can_afford(kind:String) -> bool:
  if not Catalog.ITEMS.has(kind):return false
  var cost:Dictionary=Catalog.ITEMS[kind].cost
@@ -29,6 +33,9 @@ func can_afford(kind:String) -> bool:
  return true
 func collect(world_id:String,kind:String,amount:int) -> bool:
  if world_id in collected or amount<=0:return false
+ if kind in Catalog.WEAPONS:
+  if weapons.has(kind):return false
+  weapons[kind]=0;collected.append(world_id);objective.supplies=true;return true
  if not kind in Catalog.SUPPLIES and not kind in Catalog.FURNITURE:return false
  collected.append(world_id)
  inventory[kind]=int(inventory.get(kind,0))+amount
@@ -82,8 +89,11 @@ func transfer(ident:int,kind:String,amount:int,deposit:bool) -> bool:
  destination[kind]=int(destination.get(kind,0))+amount
  if source!=inventory and source[kind]==0:source.erase(kind)
  return true
+func equip(kind:String) -> bool:
+ if not weapons.has(kind):return false
+ equipped=kind;return true
 func snapshot() -> Dictionary:
- return {"version":VERSION,"inventory":inventory.duplicate(true),"objects":objects.duplicate(true),"collected":collected.duplicate(),"objective":objective.duplicate(),"player_position":player_position.duplicate(),"health":health,"magazine":magazine,"next_id":next_id,"kills":kills,"settings":settings.duplicate()}
+ return {"version":VERSION,"inventory":inventory.duplicate(true),"objects":objects.duplicate(true),"collected":collected.duplicate(),"objective":objective.duplicate(),"player_position":player_position.duplicate(),"health":health,"magazine":magazine,"weapons":weapons.duplicate(),"equipped":equipped,"next_id":next_id,"kills":kills,"settings":settings.duplicate()}
 static func valid_count(value) -> bool:
  return (value is int or value is float) and is_finite(float(value)) and float(value)==floor(float(value)) and value>=0 and value<=100000
 static func valid_position(value) -> bool:
@@ -92,16 +102,26 @@ static func valid_position(value) -> bool:
   if not (n is int or n is float) or not is_finite(float(n)) or abs(float(n))>1000:return false
  return true
 static func validate(data) -> bool:
- if not data is Dictionary or data.get("version")!=VERSION:return false
+ if not data is Dictionary:return false
+ if data.get("version")!=1 and data.get("version")!=VERSION:return false
  for k in ["inventory","objective","settings"]:
   if not data.get(k) is Dictionary:return false
  if not data.get("objects") is Array or not data.get("collected") is Array:return false
  if not valid_position(data.get("player_position")):return false
- if not valid_count(data.get("magazine")) or data.magazine>12:return false
+ var capacity=12
+ if data.version==VERSION:
+  if not data.get("weapons") is Dictionary or not data.get("equipped") is String:return false
+  if not data.weapons.has("pistol") or not data.weapons.has(data.equipped):return false
+  for kind in data.weapons:
+   if not Catalog.WEAPONS.has(kind) or not valid_count(data.weapons[kind]) or data.weapons[kind]>Catalog.WEAPONS[kind].capacity:return false
+  capacity=Catalog.WEAPONS[data.equipped].capacity
+  if data.get("magazine")!=data.weapons[data.equipped]:return false
+ if not valid_count(data.get("magazine")) or data.magazine>capacity:return false
  if not valid_count(data.get("next_id")) or data.next_id<1:return false
  if not valid_count(data.get("kills")):return false
  if not (data.get("health") is float or data.get("health") is int) or not is_finite(float(data.health)) or data.health<0 or data.health>100:return false
  for k in Catalog.SUPPLIES+Catalog.FURNITURE:
+  if data.version==1 and k in ["rifle_ammo","shells"]:continue
   if not valid_count(data.inventory.get(k)):return false
  for k in ["supplies","collectible","returned","decorated","built"]:
   if not data.objective.get(k) is bool:return false
@@ -132,6 +152,7 @@ static func validate(data) -> bool:
 func restore(data) -> bool:
  if not validate(data):return false
  inventory=data.inventory.duplicate(true); objects=data.objects.duplicate(true); collected=data.collected.duplicate()
+ for key in ["rifle_ammo","shells"]:inventory[key]=int(inventory.get(key,0))
  for key in inventory:inventory[key]=int(inventory[key])
  for obj in objects:
   obj.id=int(obj.id);obj.yaw=float(obj.yaw);obj.hp=float(obj.hp)
@@ -139,7 +160,10 @@ func restore(data) -> bool:
   for key in obj.contents:obj.contents[key]=int(obj.contents[key])
  objective=data.objective.duplicate();player_position=data.player_position.duplicate();health=float(data.health)
  for i in range(3):player_position[i]=float(player_position[i])
- magazine=int(data.magazine);next_id=int(data.next_id);kills=int(data.kills);settings=data.settings.duplicate()
+ weapons=data.weapons.duplicate() if data.version==VERSION else {"pistol":int(data.magazine)}
+ for key in weapons:weapons[key]=int(weapons[key])
+ equipped=data.equipped if data.version==VERSION else "pistol"
+ next_id=int(data.next_id);kills=int(data.kills);settings=data.settings.duplicate()
  settings.sensitivity=float(settings.sensitivity);settings.volume=float(settings.volume)
  return true
 func save_to(path:String="user://survival.json") -> bool:

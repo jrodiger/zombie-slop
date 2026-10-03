@@ -39,14 +39,38 @@ func run(owner_game):
  game.new_game();await wait(.5)
  check(game.running and not game.overlay,"Start enters playable scene")
  check(game.player.animation!=null and game.player.animation.get_animation_list().size()>=8,"Imported skeleton has eight animation clips")
- var weapon=game.player.flash.get_parent()
- check(weapon.global_basis.z.normalized().dot(game.player.visual.global_basis.z.normalized())>.98,"Weapon muzzle points along character forward")
- check(weapon.global_basis.y.normalized().dot(Vector3.UP)>.98,"Weapon grip preserves upright orientation")
+ check(game.player.weapon_visuals.size()==3,"Imported survivor carries three switchable pack weapons")
+ game.assets.animate(game.player.animation,"Aim",0);await wait(.15)
+ var muzzle=game.player.flash.get_parent()
+ check(muzzle.name=="PistolMuzzle","Muzzle flash uses the pack weapon socket")
+ check((muzzle.global_position-game.player.visual.find_child("PistolGrip",true,false).global_position).normalized().dot(game.player.visual.global_basis.z.normalized())>.85,"Pack weapon barrel faces character forward in aiming pose")
  var before=game.player.position
  for i in range(45):
   game.player.yaw=PI;Input.action_press("forward");await get_tree().physics_frame
  Input.action_release("forward")
  check(game.player.position.distance_to(before)>2,"Third-person movement responds to input")
+ # Walk across the actual street curb and raised doorway without jumping.
+ game.player.position=Vector3(4.7,.2,15);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;game.player.reset_physics_interpolation();await wait(.2)
+ Input.action_press("forward");await wait(1.0);Input.action_release("forward")
+ check(game.player.position.x>7.7,"Walk up and down street curb without jump")
+ var curb_zombie=get_tree().get_nodes_in_group("zombies")[1]
+ curb_zombie.position=Vector3(4.7,.2,15);curb_zombie.velocity=Vector3.ZERO;curb_zombie.alerted=5;curb_zombie.think_left=0
+ game.player.position=Vector3(12.5,.2,15);game.player.velocity=Vector3.ZERO;await wait(2.2)
+ check(curb_zombie.position.x>7.7,"Pursuing zombie crosses street curb without getting stuck")
+ game.player.position=Vector3(-24,.2,23.5);game.player.velocity=Vector3.ZERO;game.player.yaw=PI;game.player.reset_physics_interpolation();await wait(.2)
+ Input.action_press("forward");await wait(.8);Input.action_release("forward")
+ check(game.player.position.z>26 and game.player.position.y>.1,"Walk into raised home doorway without jump")
+ game.player.position=Vector3(-30.7,.2,29);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;await wait(.2)
+ Input.action_press("forward");await wait(.5);Input.action_release("forward")
+ check(game.player.position.x< -30.35,"Step assistance cannot climb a full-height house wall")
+ var ceiling=game.world.collider(Vector3(55,1.95,50),Vector3(4,.1,4),false)
+ var low_step=game.world.collider(Vector3(55,.12,50),Vector3(1,.24,2),false)
+ game.player.position=Vector3(54,.05,50);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;await wait(.2)
+ Input.action_press("forward");await wait(.6);Input.action_release("forward")
+ check(game.player.position.x<54.5,"Step assistance respects low ceiling clearance")
+ ceiling.queue_free();low_step.queue_free()
+ game.player.position=Vector3(-24,.2,27);game.player.reset_physics_interpolation()
+ check(Engine.max_fps==60,"Normal gameplay starts capped at 60 FPS")
  Input.action_press("aim");await wait(.3)
  check(game.player.aiming and game.player.camera.fov<68,"Aiming adjusts shoulder camera")
  Input.action_release("aim")
@@ -65,12 +89,30 @@ func run(owner_game):
  zombie.take_damage(100);check(not zombie.alive and game.state.kills==1,"Zombie death disables collision and grants kill")
  game.player.take_damage(25);check(game.state.health==75,"Player damage applies")
  game.player.heal();check(game.state.health==100 and game.state.inventory.medkit==1,"Healing consumes one medkit")
+ # Actual world pickups, weapon switching and interrupted reload conservation.
+ game.player.position=Vector3(-19,.2,0);await wait(.1);game.interact();await wait(.1)
+ check(game.state.equipped=="shotgun" and game.state.magazine==0,"Looting shotgun equips the pack model unloaded")
+ game.player.position=Vector3(-19,.2,2);await wait(.1);game.interact();game.player.reload();await wait(2.8)
+ check(game.state.magazine==6 and game.state.inventory.shells==12,"Shotgun reload spends exactly six shells")
+ game.player.shot_cooldown=0;game.player.shoot();check(game.state.magazine==5,"Six shotgun pellets consume one shell")
+ game.player.reload();var shells=game.state.inventory.shells;game.player.equip("pistol");await wait(.3)
+ check(game.player.reload_left==0 and game.state.inventory.shells==shells and game.state.weapons.shotgun==5,"Switching cancels reload without spending or duplicating ammunition")
+ game.player.position=Vector3(25,.2,-32);await wait(.1);game.interact();await wait(.1)
+ check(game.state.equipped=="rifle" and game.state.weapons.has("rifle"),"Supply house contains lootable rifle")
+ game.player.position=Vector3(25,.2,-30);await wait(.1);game.interact();game.player.reload();await wait(2.3)
+ check(game.state.magazine==30 and game.state.inventory.rifle_ammo==60,"Rifle reload uses separate reserve rounds")
+ game.player.equip("pistol")
+ check(not game.player.flash.visible and game.player.flash_left==0,"Switching weapons cannot create a muzzle flash")
+ game.state.magazine=0;game.player.shot_cooldown=0;game.player.shoot()
+ check(not game.player.flash.visible and game.player.flash_left==0,"Dry fire cannot create a muzzle flash")
+ game.state.magazine=12
  await capture("02-street")
  for entry in [["porch-wood",Vector3(-19,.2,23)],["porch-scrap",Vector3(-19,.2,21)],["fern",Vector3(-12,.2,13)],["radio",Vector3(11,.2,4)]]:
   game.player.position=entry[1];await wait(.1);game.interact();await wait(.1)
  check(game.state.inventory.plant==1 and game.state.inventory.radio==1,"Collect multiple actual world objects")
  check(game.state.inventory.wood==12 and game.state.inventory.scrap==4,"Collect world construction materials")
- check(game.world.route(Vector3(0,0,20),Vector3(-24,0,30)).size()>2,"Navigation finds path into accessible home interior")
+ var home_route:PackedVector3Array=game.world.route(Vector3(0,0,20),Vector3(-24,0,30))
+ check(home_route.size()>2 and home_route[home_route.size()-1].distance_to(Vector3(-24,.2,30))<.1,"Navigation reaches accessible home interior, not a partial path")
  game.player.position=Vector3(-24,.3,29);await wait(.25)
  check(game.state.objective.returned,"Returning home advances starter objective")
  var untouched=game.state.snapshot()
@@ -140,7 +182,10 @@ func run(owner_game):
  game.player.position=Vector3(-25,.3,29);game.save_game(false)
  var snapshot=game.state.snapshot();check(game.state.save_to(game.save_path),"Save furnished base to isolated integration file")
  var expected=FileAccess.open(game.report_dir()+"/relaunch-expected.json",FileAccess.WRITE);expected.store_string(JSON.stringify(snapshot,"  ",false,true));expected.close()
- game.state.reset();check(game.state.load_from(game.save_path),"Load furnished base")
+ game.state.reset();game.state.settings.cap=false;game.load_game()
+ check(game.running and game.state.objects.size()==snapshot.objects.size(),"Load furnished base")
+ check(not game.state.settings.cap and Engine.max_fps==0,"Loading older save preserves current FPS preference")
+ game.state.settings.cap=true;game.apply_settings()
  check(arrangement_matches(game.state.snapshot(),snapshot),"Object identity, arrangement and container contents survive save/load within 1e-9 radians")
  game.rebuild();await wait(.3)
  check(get_tree().get_nodes_in_group("placed").size()==snapshot.objects.size(),"Load restores one physics object per saved identity")
@@ -168,7 +213,7 @@ func arrangement_matches(a:Dictionary,b:Dictionary) -> bool:
    if x[key]!=y[key]:return false
   if Vector3(x.position[0],x.position[1],x.position[2])!=Vector3(y.position[0],y.position[1],y.position[2]):return false
   if absf(float(x.yaw)-float(y.yaw))>1e-9:return false
- for key in ["inventory","collected","objective","health","magazine","next_id","kills","settings"]:
+ for key in ["inventory","collected","objective","health","magazine","weapons","equipped","next_id","kills","settings"]:
   if a[key]!=b[key]:return false
  return true
 

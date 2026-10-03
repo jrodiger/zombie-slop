@@ -3,8 +3,8 @@
   "blender": "4.5.14 LTS",
   "private_repository": "https://github.com/jrodiger/zombie-slop-assets",
   "private_visibility_verified": true,
-  "asset_commit": "74a6c975a38024bb88b54067c68399fc6bbb9ed9",
-  "private_push": "Commit and LFS objects acknowledged by GitHub; main head verified via API. Initial 42 objects / 35 MB plus a 1.5 MB repaired zombie checkpoint; no paid overages enabled.",
+  "asset_commit": "b19c6718a1c689e474330b84f37fe36009c851e6",
+  "private_push": "Validated working sources committed and pushed; GitHub acknowledged 7 new LFS objects / 15 MB, with the previous original-source checkpoints retained. Private visibility reverified before upload; no paid overages enabled.",
   "packs": [
     {
       "name": "Kenney City Kit (Suburban)",
@@ -44,7 +44,19 @@
         "Chest.gltf",
         "Vehicle_Pickup.gltf"
       ],
-      "status": "Not downloaded: author Google Drive reports quota exceeded. Required originals location: downloads/zombie. No Quaternius character use claimed."
+      "status": "Installed from complete user-downloaded Google Drive archive; pristine original preserved in external downloads/zombie-apocalypse/extracted.",
+      "archive_sha256": "52bbce65959f6e85fcefe5210f3efba60ac89ef09aa60a31301ee50cf1807242",
+      "files_used": [
+        "Characters/Blends/Characters_Matt.blend",
+        "Characters/Blends/Zombie_Basic.blend",
+        "Weapons/Blends/Pistol.blend",
+        "Weapons/Blends/Rifle.blend",
+        "Weapons/Blends/Shotgun.blend",
+        "Vehicles/Blends/Vehicle_Pickup.blend",
+        "Environment/Blends/Chest.blend",
+        "Zombie_Atlas.png"
+      ],
+      "treatment": "Editable CC0 working copies under private quaternius/. Survivor keeps author Middle1.L attachments for three switchable guns; barrel endpoints fitted against standalone geometry. Original gun locomotion reused; same-rig Aim/Shoot/Reload actions added. Zombie eyelids/body joined into one atlas skin; Punch copied to Attack. Rig scale 1.15. Props matched to collision footprints. Blender constraints sampled and baked in explicit GLB exports. Reproduce with scripts/adapt_quaternius.py --export-only. Pristine files are hash-checked and never saved over."
     },
     {
       "name": "Quaternius Survival Pack",
@@ -119,7 +131,7 @@
       "pistol",
       "crate"
     ],
-    "limitations": "Original temporary characters replace preferred Quaternius characters only because requested downloads were blocked. Selected art-pack integration remains incomplete."
+    "limitations": "Original temporary survivor/zombie/pistol/car/storage remain checkpointed for restoration; runtime now uses the Quaternius replacements. Original construction, furniture and vegetation remain where other requested packs are unavailable."
   },
   "public_asset_files": []
 }

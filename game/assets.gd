@@ -9,7 +9,11 @@ func model(kind:String) -> Node3D:
   scenes[kind]=load(path)
  return scenes[kind].instantiate()
 func animation(root:Node) -> AnimationPlayer:
- if root is AnimationPlayer:return root
+ if root is AnimationPlayer:
+  # Animation advances with simulation, not hundreds of times per second in
+  # uncapped profiling. Physics interpolation supplies smooth rendered poses.
+  root.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_PHYSICS
+  return root
  for child in root.get_children():
   var found=animation(child)
   if found!=null:return found

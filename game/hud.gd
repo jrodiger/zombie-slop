@@ -55,7 +55,7 @@ func _process(delta):
  notice_left=maxf(0,notice_left-delta);message.visible=notice_left>0
  if not game.running:return
  health.value=game.state.health;stamina.value=game.player.sprint_energy
- ammo.text="%02d / %03d   ·   HEALTH %d"%[game.state.magazine,int(game.state.inventory.ammo),game.state.health]
+ ammo.text="%s  %02d / %03d   ·   HEALTH %d"%[game.player.profile().name,game.state.magazine,int(game.state.inventory[game.player.profile().ammo]),game.state.health]
  if game.player.reload_left>0:ammo.text="RELOADING…  %.1fs"%game.player.reload_left
  status.text="DAY 01   ·   WOOD %d   SCRAP %d   MED %d"%[game.state.inventory.wood,game.state.inventory.scrap,game.state.inventory.medkit]
  objective.text=game.objective_text()
@@ -91,7 +91,7 @@ func start_screen():
  button("CONTINUE SAVED GAME",game.load_game)
  button("SETTINGS",settings)
  button("QUIT",game.quit_game)
- var help=text("WASD / left stick  move   ·   Mouse / right stick  look\nRMB / LT  aim   ·   LMB / RT  fire   ·   R / X  reload\nE / A  collect   ·   B / Y  build & furnish\nShift / L3  sprint   ·   H / D-pad up  heal",16);panel_content.add_child(help)
+ var help=text("WASD / left stick  move   ·   Mouse / right stick  look\nRMB / LT  aim   ·   LMB / RT  fire   ·   R / X  reload\nE / A  collect   ·   B / Y  build & furnish\nShift / L3  sprint   ·   H / D-pad up  heal\n1–3  select gun   ·   V / D-pad left  cycle guns",16);panel_content.add_child(help)
 func pause():
  open_panel("TAKE A BREATH","Game paused. Essential progress is saved locally.")
  button("RESUME",game.close_overlay).grab_focus()

@@ -45,7 +45,7 @@ func _ready():
 func create_world():
  world=World.new();add_child(world);world.configure(self)
  player=Player.new();add_child(player);player.configure(self);player.position=Vector3(-24,.2,22);player.yaw=PI;player.visual.rotation.y=0
- player.pivot.position=Vector3(0,1.5,0);player.pivot.rotation=Vector3(-.18,PI,0);player.camera.position=Vector3(.65,.25,4.6)
+ player.camera.global_position=player.position+Vector3(-.65,1.75,-4.6);player.reset_physics_interpolation()
 func inputs():
  bind("forward",KEY_W,JOY_BUTTON_INVALID,JOY_AXIS_LEFT_Y,-1)
  bind("back",KEY_S,JOY_BUTTON_INVALID,JOY_AXIS_LEFT_Y,1)
@@ -61,6 +61,10 @@ func inputs():
  bind("build",KEY_B,JOY_BUTTON_Y)
  bind("reload",KEY_R,JOY_BUTTON_X)
  bind("heal",KEY_H,JOY_BUTTON_DPAD_UP)
+ bind("weapon_next",KEY_V,JOY_BUTTON_DPAD_LEFT)
+ bind("weapon_pistol",KEY_1)
+ bind("weapon_rifle",KEY_2)
+ bind("weapon_shotgun",KEY_3)
  bind("pause",KEY_ESCAPE,JOY_BUTTON_START)
  bind("cancel",KEY_ESCAPE,JOY_BUTTON_B)
  bind("move_item",KEY_G,JOY_BUTTON_LEFT_SHOULDER)
@@ -110,6 +114,9 @@ func _unhandled_input(event):
  if event.is_action_pressed("interact"):interact()
  if event.is_action_pressed("move_item"):move_nearest()
  if event.is_action_pressed("pickup_item"):pickup_nearest()
+ if event.is_action_pressed("weapon_next"):player.cycle_weapon()
+ for kind in catalog.WEAPONS:
+  if event.is_action_pressed("weapon_"+kind):player.equip(kind)
 func _process(delta):
  damage_feedback=maxf(0,damage_feedback-delta);hit_feedback=maxf(0,hit_feedback-delta)
  if not running or overlay:return
@@ -128,6 +135,7 @@ func rebuild():
  create_world()
  for obj in state.objects:spawn_piece(obj)
  player.position=Vector3(state.player_position[0],state.player_position[1],state.player_position[2])
+ player.reset_physics_interpolation()
  # Detect corrupt/obsolete locations or placement intersecting the capsule.
  var q=PhysicsShapeQueryParameters3D.new();q.shape=player.get_child(0).shape;q.transform=Transform3D(Basis(),player.position+Vector3.UP*.9);q.collision_mask=1
  if player.position.y<-.5 or player.position.y>8 or absf(player.position.x)>72 or absf(player.position.z)>72 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
@@ -139,6 +147,7 @@ func die():
  running=false;Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;cancel_placement();ui.death()
 func recover_player():
  player.global_position=Vector3(-24,.4,20);player.velocity=Vector3.ZERO
+ player.reset_physics_interpolation()
  if ui!=null:toast("Returned to the home path")
 func save_game(notify:bool=true) -> bool:
  if not running or state.health<=0:return false
@@ -147,7 +156,10 @@ func save_game(notify:bool=true) -> bool:
  if notify:toast("Progress saved" if success else state.save_error)
  return success
 func load_game():
+ var preferences=state.settings.duplicate()
  if not state.load_from(save_path):toast(state.save_error);return
+ # Current preferences take priority over settings embedded in an older save.
+ state.settings=preferences
  var notice=state.save_error;rebuild();running=true;close_overlay();toast("Welcome home" if notice=="" else notice)
 func save_settings():
  var config=ConfigFile.new()
@@ -161,7 +173,7 @@ func load_settings():
  if State.validate(candidate):state.settings=candidate.settings
 func apply_settings():
  Engine.max_fps=60 if state.settings.cap else 0
- DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+ DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if state.settings.cap else DisplayServer.VSYNC_DISABLED)
  AudioServer.set_bus_volume_db(0,linear_to_db(maxf(.001,float(state.settings.volume))))
  if world!=null and world.sun!=null:world.sun.shadow_enabled=bool(state.settings.shadows)
 func quit_game():
@@ -196,7 +208,9 @@ func interaction_prompt() -> String:
 func interact():
  var loot=world.nearest_loot(player.global_position)
  if loot!=null:
-  if state.collect(loot.id,loot.kind,loot.amount):loot.node.queue_free();sound("pickup");toast("Collected "+loot.kind+" ×"+str(loot.amount))
+  if state.collect(loot.id,loot.kind,loot.amount):
+   loot.node.queue_free();sound("pickup");toast("Collected "+loot.kind+" ×"+str(loot.amount))
+   if loot.kind in catalog.WEAPONS:player.equip(loot.kind)
   return
  var piece=nearest_piece()
  if piece==null:return

@@ -6,6 +6,7 @@ run/main_scene="res://game/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/use_custom_user_dir=true
 config/custom_user_dir_name="Zombie Slop"
+run/max_fps=60
 [display]
 window/size/viewport_width=1280
 window/size/viewport_height=800
@@ -20,3 +21,4 @@ textures/default_filters/use_nearest_mipmap_filter=false
 environment/defaults/default_clear_color=Color(0.14, 0.19, 0.18, 1)
 [physics]
 common/physics_ticks_per_second=60
+common/physics_interpolation=true
