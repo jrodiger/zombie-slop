@@ -12,7 +12,9 @@ p = argparse.ArgumentParser()
 p.add_argument('--pack', type=Path, required=True)
 p.add_argument('--assets', type=Path, required=True)
 p.add_argument('--out', type=Path, required=True)
-p.add_argument('--export-only', action='store_true')
+mode = p.add_mutually_exclusive_group()
+mode.add_argument('--export-only', action='store_true')
+mode.add_argument('--resume', action='store_true')
 a = p.parse_args(sys.argv[sys.argv.index('--') + 1:])
 source = Path(__file__).resolve().parents[1]
 pack, private, out = (x.expanduser().resolve() for x in (a.pack, a.assets, a.out))
@@ -36,12 +38,14 @@ mapping = {
 exported = {}
 
 def alias(original, name):
+    """Copy an author action under a gameplay clip name without editing it."""
     action = bpy.data.actions[original].copy()
     action.name = name
     action.use_fake_user = True
     return action
 
 def adapt_character(kind):
+    """Prepare author rigs, weapon sockets and gestures in a working copy."""
     rig = bpy.data.objects['CharacterArmature']
     rig.animation_data.action = bpy.data.actions['Idle_Gun' if kind == 'survivor' else 'Idle']
     for track in list(rig.animation_data.nla_tracks):
@@ -106,6 +110,7 @@ def adapt_character(kind):
     bpy.context.view_layer.update()
 
 def normalize_prop(kind):
+    """Fit complete prop geometry to the runtime footprint and ground plane."""
     # Match the existing collision footprint, center XY and put the base at Z=0.
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH']
     points = [mesh.matrix_world @ Vector(corner) for mesh in meshes for corner in mesh.bound_box]
@@ -127,8 +132,11 @@ for kind, relative in mapping.items():
     original = pack / relative
     before = hashlib.sha256(original.read_bytes()).hexdigest()
     editable = working / (kind + '.blend')
-    if not a.export_only:
-        if editable.exists():raise SystemExit('Working source already exists: ' + str(editable))
+    if editable.exists() and not a.export_only and not a.resume:
+        raise SystemExit('Working source already exists: ' + str(editable))
+    if a.export_only or (a.resume and editable.exists()):
+        bpy.ops.wm.open_mainfile(filepath=str(editable))
+    else:
         bpy.ops.wm.open_mainfile(filepath=str(original))
         if kind in ('survivor', 'zombie'):adapt_character(kind)
         else:normalize_prop(kind)
@@ -139,8 +147,6 @@ for kind, relative in mapping.items():
         bpy.context.preferences.filepaths.save_version = 2
         bpy.context.preferences.filepaths.use_auto_save_temporary_files = True
         bpy.ops.wm.save_as_mainfile(filepath=str(editable))
-    else:
-        bpy.ops.wm.open_mainfile(filepath=str(editable))
     editable_before = hashlib.sha256(editable.read_bytes()).hexdigest()
     bpy.ops.export_scene.gltf(filepath=str(out / (kind + '.glb')), export_format='GLB',
                              export_animations=True, export_animation_mode='ACTIONS',

@@ -21,9 +21,10 @@ func configure(owner_game,spawn:Vector3,index:int):
  # AI/collision remain live; hidden skeletons do not need pose updates. The
  # notifier follows the capsule and resumes the current clip when visible.
  var visibility=VisibleOnScreenNotifier3D.new();visibility.aabb=AABB(Vector3(-1,-.1,-1),Vector3(2,2.2,2));add_child(visibility)
- animation.active=false
- visibility.screen_entered.connect(func():animation.active=true)
- visibility.screen_exited.connect(func():animation.active=false)
+ if animation!=null:
+  animation.active=false
+  visibility.screen_entered.connect(func():animation.active=true)
+  visibility.screen_exited.connect(func():animation.active=false)
 func _physics_process(delta):
  if game==null or not game.running or game.overlay or not alive:return
  think_left-=delta;attack_left=maxf(0,attack_left-delta);alerted=maxf(0,alerted-delta);stagger=maxf(0,stagger-delta)

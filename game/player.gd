@@ -95,6 +95,7 @@ func _process(delta):
 func profile() -> Dictionary:
  return game.catalog.WEAPONS[game.state.equipped]
 func equip(kind:String):
+ if kind==game.state.equipped:return
  if not game.state.equip(kind):game.toast("Find this weapon first");return
  reload_left=0;flash_left=0;firing_left=0;flash.visible=false;shot_cooldown=maxf(shot_cooldown,.2);update_weapon();game.toast("Equipped "+str(profile().name))
 func cycle_weapon():

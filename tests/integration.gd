@@ -86,6 +86,11 @@ func run(owner_game):
  game.player.shot_cooldown=0;game.player.shoot();await wait(.03)
  check(game.state.magazine==11 and zombie.hp<100,"Fire spends ammunition and damages raycast target")
  game.player.reload();check(game.player.reload_left>0,"Reload starts")
+ var reload_before=game.player.reload_left
+ game.player.equip("pistol")
+ check(game.player.reload_left==reload_before,"Selecting current gun preserves the in-progress reload")
+ game.player.cycle_weapon()
+ check(game.player.reload_left==reload_before,"Cycling the sole owned gun preserves the in-progress reload")
  await wait(1.8)
  check(game.state.magazine==12 and game.state.inventory.ammo==47,"Reload transfers exactly missing rounds")
  zombie.take_damage(100);check(not zombie.alive and game.state.kills==1,"Zombie death disables collision and grants kill")
@@ -214,6 +219,13 @@ func run(owner_game):
  check(not game.running and game.player.reload_left==0,"Death interrupts reload without duplicating ammo")
  await capture("07-death")
  game.new_game();await wait(.3);check(game.running and game.state.health==100,"Restart creates fresh playable state")
+ # Exercise the model fallback shape without emitting a missing-file error.
+ var original_zombie=game.assets.scenes.zombie
+ var empty_scene=PackedScene.new();var empty_model=Node3D.new();empty_scene.pack(empty_model);empty_model.free()
+ game.assets.scenes.zombie=empty_scene
+ var fallback_zombie=game.world.Zombie.new();game.world.add_child(fallback_zombie);fallback_zombie.configure(game,Vector3(60,.2,60),0)
+ check(fallback_zombie.animation==null and fallback_zombie.visual!=null,"Zombie model without animations configures safely")
+ fallback_zombie.queue_free();game.assets.scenes.zombie=original_zombie;await wait(.1)
  var report={"checks":checks,"failures":failures,"graphical":DisplayServer.get_name()!="headless","engine":Engine.get_version_info().string,"physical_gamepad":false}
  var f=FileAccess.open(game.report_dir()+"/integration.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close()
  print("INTEGRATION TESTS: %d checks, %d failures"%[checks,failures])

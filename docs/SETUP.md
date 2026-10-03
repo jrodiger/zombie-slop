@@ -60,7 +60,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
      --export-only
    ```
 
-   To create the Quaternius working sources in a new private checkout, omit `--export-only`; existing working files are protected from overwrite. The adapter preserves author weapon sockets, packs the atlas into editable Blender files, adds same-rig gestures, joins the zombie atlas mesh, normalizes props, and bakes constraints during export.
+   To create the Quaternius working sources in a new private checkout, omit `--export-only`; existing working files are protected from overwrite. If creation/export fails partway through, rerun with `--resume`: it opens and re-exports existing sources without saving over them, and creates only missing ones. `--resume` and `--export-only` are mutually exclusive. The adapter preserves author weapon sockets, packs the atlas into editable Blender files, adds same-rig gestures, joins the zombie atlas mesh, normalizes props, and bakes constraints during export.
 
    For a deliberately new original source set, use `create_assets.py` with a new external asset folder; replacing checkpointed originals requires `--replace-existing`. The exporter opens the matching private `.blend` files, joins only in memory, checks source hashes and synthesizes the original audio.
 
