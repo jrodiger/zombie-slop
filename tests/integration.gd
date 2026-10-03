@@ -190,5 +190,7 @@ func verify_relaunch(owner_game) -> int:
  check(get_tree().get_nodes_in_group("placed").size()==reference.objects.size(),"Relaunch restores one collider per placed identity")
  check(game.world.loot.filter(func(item):return item.id=="fern").is_empty(),"Relaunch preserves collected world identity")
  await capture("08-relaunched-base")
+ game.player.position=Vector3(-36,.3,34);game.player.yaw=PI;game.player.pitch=-.18
+ await wait(.4);await capture("09-freestanding-shelter")
  print("RELAUNCH TESTS: %d checks, %d failures"%[checks,failures])
  return 1 if failures else 0

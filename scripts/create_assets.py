@@ -4,7 +4,7 @@ Original low-poly source assets; outputs MUST stay outside the public repository
 import bpy,math,random,sys,argparse,json,wave,struct
 from pathlib import Path
 from mathutils import Vector
-p=argparse.ArgumentParser();p.add_argument('--assets',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--replace-existing',action='store_true');p.add_argument('--only',choices=['survivor','zombie']);a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
+p=argparse.ArgumentParser();p.add_argument('--assets',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--replace-existing',action='store_true');p.add_argument('--only',choices=['survivor','zombie','audio']);a=p.parse_args(sys.argv[sys.argv.index('--')+1:])
 source=Path(__file__).resolve().parents[1]
 for root in [a.assets.resolve(),a.out.resolve()]:
  if root==source or source in root.parents:raise SystemExit('Assets must remain outside public source.')

@@ -42,13 +42,15 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 
    Git LFS tracking is committed before the first `.blend` commit. Do not put private asset LFS pointers in the public checkout.
 
-5. Prefer the matching asset revision recorded in `docs/ASSETS.json`. The generator creates original assets and refuses existing `.blend` files. Export hand-edited sources separately; to deliberately recreate a checkpointed original, pass `--replace-existing`, optionally with `--only zombie` or `--only survivor`. Before substantial changes commit the working asset checkpoint. Preserve existing sources, then export into a separate output directory. To recreate this first original asset set from code:
+5. Prefer the matching asset revision recorded in `docs/ASSETS.json`. The generator creates original assets and refuses existing `.blend` files. Export hand-edited sources separately; to deliberately recreate a checkpointed original, pass `--replace-existing`, optionally with `--only zombie` or `--only survivor`. Before substantial changes commit the working asset checkpoint. Preserve existing sources, then export into a separate output directory. To export the existing private checkout without changing any editable source:
 
    ```sh
    "$HOME/Documents/ZombieSlop/tools/Blender.app/Contents/MacOS/Blender" \
-     --background --python scripts/create_assets.py -- \
+     --background --python scripts/export_assets.py -- \
      --assets ../zombie-slop-assets --out "$HOME/Documents/ZombieSlop/generated"
    ```
+
+   For a deliberately new original source set, use `create_assets.py` with a new external asset folder; replacing checkpointed originals requires `--replace-existing`. The exporter opens the matching private `.blend` files, joins only in memory, checks source hashes and synthesizes the original audio.
 
    Blender autosave is enabled in the generation process at two minutes and saved backup versions are set to two. For interactive work enable the same settings in Blender Preferences → Save & Load. Preserve the `.blend` files with editable rigs/actions/materials. The generator exports GLB explicitly with Y-up, eight animation actions, no texture dependencies for original models, and joins meshes for fewer draw calls. The swinging door keeps its pivot separate. Original deterministic audio is synthesized with seed 7; editable parameters are in the generator and private `recipe.json`.
 

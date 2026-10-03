@@ -79,14 +79,17 @@ def main():
             def download(entry):
                 """Reject HTML responses and record an asset download checksum."""
                 ident, rel = entry
-                path = dest / rel
+                path = (dest / rel).resolve()
+                if not path.is_relative_to(dest.resolve()):raise ValueError('Unsafe remote asset path: '+str(rel))
                 path.parent.mkdir(parents=True, exist_ok=True)
                 url = 'https://drive.usercontent.google.com/download?id=' + ident + '&export=download&confirm=t'
                 if not path.exists():
                     data = read(url)
                     if data[:100].lower().find(b'<html') >= 0 or data[:100].lower().find(b'<!doctype') >= 0:
                         raise ValueError('Download returned HTML: ' + str(rel))
-                    path.write_bytes(data)
+                    temporary=path.with_name(path.name+'.part')
+                    temporary.write_bytes(data)
+                    temporary.replace(path)
                 print('Ready', pack, rel, flush=True)
                 return {'file': str(rel), 'url': url, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
             with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:

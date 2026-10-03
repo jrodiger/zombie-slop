@@ -94,7 +94,7 @@
     "license": "All rights reserved; separate from MIT code",
     "editable_sources": "Sibling private checkout: 21 .blend files + recipe.json. Character rigs contain named hand.R socket and eight clips: Idle, Walk, Run, Aim, Shoot, Reload, Attack, Death. Original pistol is attached at runtime; original clips avoid cross-rig retargeting.",
     "generator": "scripts/create_assets.py",
-    "export": "Blender background explicit Y-up GLB, action export, mesh joining for runtime surfaces; swinging DoorPivot stays separate. Outputs regenerated to external generated/ folder. Generator refuses existing editable sources unless --replace-existing is explicit; --only zombie permits a focused checkpoint repair.",
+    "export": "Blender background explicit Y-up GLB, action export, mesh joining for runtime surfaces; swinging DoorPivot stays separate. Outputs regenerated to external generated/ folder. Generator refuses existing editable sources unless --replace-existing is explicit; --only zombie permits a focused checkpoint repair. Existing private sources are reproducibly exported without saving changes by scripts/export_assets.py; every source hash is checked.",
     "audio": "Seven original deterministic PCM effects/ambient clips, 22050Hz mono; generator seed 7 and editable synthesis parameters. No downloaded audio/font assets.",
     "files": [
       "survivor",

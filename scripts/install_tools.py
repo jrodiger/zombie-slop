@@ -14,8 +14,10 @@ def fetch(url, path):
     """Download an official archive only when the external cache is absent."""
     if not path.exists():
         print('Downloading', path.name, flush=True)
-        with urllib.request.urlopen(url, timeout=120) as r, path.open('wb') as out:
+        temporary=path.with_name(path.name+'.part')
+        with urllib.request.urlopen(url, timeout=120) as r, temporary.open('wb') as out:
             shutil.copyfileobj(r, out)
+        temporary.replace(path)
 
 def main():
     """Install pinned official tools and export templates outside source."""
