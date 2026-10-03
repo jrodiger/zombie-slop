@@ -209,7 +209,7 @@ func interact():
  var loot=world.nearest_loot(player.global_position)
  if loot!=null:
   if state.collect(loot.id,loot.kind,loot.amount):
-   loot.node.queue_free();sound("pickup");toast("Collected "+loot.kind+" ×"+str(loot.amount))
+   loot.node.queue_free();sound("pickup");toast("Collected "+loot.kind.capitalize()+" ×"+str(loot.amount))
    if loot.kind in catalog.WEAPONS:player.equip(loot.kind)
   return
  var piece=nearest_piece()

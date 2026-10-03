@@ -98,7 +98,10 @@ func equip(kind:String):
  if not game.state.equip(kind):game.toast("Find this weapon first");return
  reload_left=0;flash_left=0;firing_left=0;flash.visible=false;shot_cooldown=maxf(shot_cooldown,.2);update_weapon();game.toast("Equipped "+str(profile().name))
 func cycle_weapon():
- var owned=game.state.weapons.keys();equip(owned[(owned.find(game.state.equipped)+1)%owned.size()])
+ var owned:Array=[]
+ for kind in game.catalog.WEAPONS:
+  if game.state.weapons.has(kind):owned.append(kind)
+ equip(owned[(owned.find(game.state.equipped)+1)%owned.size()])
 func update_weapon():
  for kind in weapon_visuals:weapon_visuals[kind].visible=kind==game.state.equipped
  var muzzle=visual.find_child(game.state.equipped.capitalize()+"Muzzle",true,false)

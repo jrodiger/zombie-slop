@@ -11,7 +11,8 @@ Launch the native `Zombie Slop.app` in the external builds folder, or run `./scr
 | Jump | Space | RB |
 | Aim / fire | Right / left mouse | LT / RT |
 | Reload | R | X |
-| Select pistol / rifle / shotgun | 1 / 2 / 3 | V / D-pad left cycles owned guns |
+| Select pistol / rifle / shotgun | 1 / 2 / 3 | Cycle owned guns below |
+| Cycle owned guns | V | D-pad left |
 | Collect / use door / storage | E | A |
 | Build / decorate menu | B | Y |
 | Heal | H | D-pad up |

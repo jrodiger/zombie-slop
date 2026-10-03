@@ -69,6 +69,8 @@ func run(owner_game):
  Input.action_press("forward");await wait(.6);Input.action_release("forward")
  check(game.player.position.x<54.5,"Step assistance respects low ceiling clearance")
  ceiling.queue_free();low_step.queue_free()
+ game.player.position=Vector3(3.2,2.4,-38);game.player.velocity=Vector3.ZERO;await wait(.5)
+ check(absf(game.player.position.y+.025-1.55)<.015,"Pack truck roof height matches collision support")
  game.player.position=Vector3(-24,.2,27);game.player.reset_physics_interpolation()
  check(Engine.max_fps==60,"Normal gameplay starts capped at 60 FPS")
  Input.action_press("aim");await wait(.3)
@@ -101,11 +103,23 @@ func run(owner_game):
  check(game.state.equipped=="rifle" and game.state.weapons.has("rifle"),"Supply house contains lootable rifle")
  game.player.position=Vector3(25,.2,-30);await wait(.1);game.interact();game.player.reload();await wait(2.3)
  check(game.state.magazine==30 and game.state.inventory.rifle_ammo==60,"Rifle reload uses separate reserve rounds")
+ var gun_target=get_tree().get_nodes_in_group("zombies").filter(func(enemy):return enemy.alive)[0]
+ game.player.position=Vector3(0,.2,9.5);game.player.velocity=Vector3.ZERO;game.player.yaw=0;game.player.pitch=0;game.player.reset_physics_interpolation()
+ gun_target.position=Vector3(.65,.2,6);gun_target.velocity=Vector3.ZERO;gun_target.stagger=5;gun_target.hp=100
+ Input.action_press("aim");await wait(.3)
+ game.player.camera.look_at(gun_target.global_position+Vector3.UP*1.1);game.player.shot_cooldown=0;game.player.shoot()
+ check(game.state.magazine==29 and gun_target.hp==74,"Rifle fires its own damage profile and spends one rifle round")
+ gun_target.hp=100;game.player.equip("shotgun");await wait(.1)
+ game.player.camera.look_at(gun_target.global_position+Vector3.UP*1.1);game.player.shot_cooldown=0;game.player.shoot()
+ check(not gun_target.alive and game.state.magazine==4,"Close-range shotgun pellets kill a real target while consuming one shell")
+ Input.action_release("aim")
  game.player.equip("pistol")
  check(not game.player.flash.visible and game.player.flash_left==0,"Switching weapons cannot create a muzzle flash")
  game.state.magazine=0;game.player.shot_cooldown=0;game.player.shoot()
  check(not game.player.flash.visible and game.player.flash_left==0,"Dry fire cannot create a muzzle flash")
  game.state.magazine=12
+ await tap("weapon_next");check(game.state.equipped=="rifle" and game.player.weapon_visuals.rifle.is_visible_in_tree() and not game.player.weapon_visuals.pistol.is_visible_in_tree(),"Cycle input selects the next owned gun and its visible model")
+ await tap("weapon_next");await tap("weapon_next")
  await capture("02-street")
  for entry in [["porch-wood",Vector3(-19,.2,23)],["porch-scrap",Vector3(-19,.2,21)],["fern",Vector3(-12,.2,13)],["radio",Vector3(11,.2,4)]]:
   game.player.position=entry[1];await wait(.1);game.interact();await wait(.1)

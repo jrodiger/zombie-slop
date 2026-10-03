@@ -1,6 +1,6 @@
 # Local development and asset protection
 
-Pinned engine: **Godot 4.7.2 stable**, GDScript, Compatibility renderer. Blender **4.5.14 LTS**, Apple Silicon. Original code is MIT; asset licenses are separate.
+Pinned engine: **Godot 4.7.2 stable**, GDScript. macOS uses the Mobile renderer with native Metal after measured frame-pacing comparisons; other platforms retain Compatibility. See [validation](VALIDATION.md) for results and limits. Blender **4.5.14 LTS**, Apple Silicon. Original code is MIT; asset licenses are separate.
 
 ## Folder layout
 
@@ -94,6 +94,8 @@ A ten-minute benchmark is included in the exported binary:
 ```
 
 It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed objects. Add `--benchmark-low` after `--benchmark` to disable sun shadows, `--benchmark-capped` for real 60 FPS pacing, or `--benchmark-short` for a 60-second diagnosis. Run it alone, without another graphical test. The ten-minute run repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks. Run `--verify-load` in a fresh process after `--integration` to compare the exact saved base and contents against the prior process's expected arrangement.
+
+For an OpenGL comparison on macOS, put `--rendering-method gl_compatibility --rendering-driver opengl3` before the separating `--`. Metal's uncapped setting does not guarantee presentation above the display refresh rate; compare measured frame times and report the actual driver, cap and VSync state. Normal gameplay starts capped at 60 FPS, with VSync; the settings menu can disable the cap or sun shadows.
 
 ## Backups and matching revisions
 

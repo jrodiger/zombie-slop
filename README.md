@@ -2,7 +2,7 @@
 
 An original offline, third-person zombie survival prototype in an overgrown suburban neighborhood. Scavenge supplies and furnishings, bring them home, freely arrange a base, and build defenses.
 
-**Godot 4.7.2 · GDScript · Compatibility renderer · MIT original code.** Assets, Blender sources, downloads, imports, screenshots and builds are kept entirely outside this public repository.
+**Godot 4.7.2 · GDScript · Metal on macOS, Compatibility elsewhere · MIT original code.** Assets, Blender sources, downloads, imports, screenshots and builds are kept entirely outside this public repository.
 
 [Local setup and asset protection](docs/SETUP.md) · [Controls and gameplay](docs/PLAY.md) · [Asset manifest](docs/ASSETS.json) · [Validation and limitations](docs/VALIDATION.md)
 

@@ -41,7 +41,7 @@ func configure(owner_game):
  prompt=text("",19,CREAM);prompt.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);prompt.position=Vector2(-350,-95);prompt.size=Vector2(700,40);prompt.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(prompt)
  message=text("",20,GOLD);message.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);message.position=Vector2(-210,140);message.size=Vector2(700,80);message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;message.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(message)
  placement=text("",18);placement.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT);placement.position=Vector2(-460,-175);placement.size=Vector2(430,145);placement.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(placement)
- var controls=text("B  Build / decorate     E  Interact     H  Heal     F5  Save     Esc  Pause",15,Color("d3d3bd"));controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);controls.position=Vector2(-360,-30);controls.size=Vector2(720,25);controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(controls)
+ var controls=text("B Build  ·  E Interact  ·  V Guns  ·  H Heal  ·  F5 Save  ·  Esc Pause",15,Color("d3d3bd"));controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);controls.position=Vector2(-360,-30);controls.size=Vector2(720,25);controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(controls)
  performance=text("",14);performance.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT);performance.position=Vector2(-350,64);performance.size=Vector2(320,60);performance.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(performance)
  reticle=text("·",32,CREAM);reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-20,-20);reticle.size=Vector2(40,40);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(reticle)
  damage=ColorRect.new();damage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);damage.color=Color(.65,.14,.08,0);damage.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(damage)
@@ -68,7 +68,7 @@ func _process(delta):
  reticle.text="×" if game.hit_feedback>0 else ("+" if game.player.aiming else "·")
  damage.color.a=game.damage_feedback*.55
  performance.visible=game.show_performance
- if performance.visible:performance.text="%d FPS  ·  %.2f ms\n%d enemies  ·  %d placed\n%d draws  ·  %d triangles"%[Engine.get_frames_per_second(),Performance.get_monitor(Performance.TIME_PROCESS)*1000,get_tree().get_nodes_in_group("zombies").size(),game.state.objects.size(),Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)]
+ if performance.visible:performance.text="%d FPS  ·  %.2f ms process\n%d enemies  ·  %d placed\n%d draws  ·  %d triangles"%[Engine.get_frames_per_second(),Performance.get_monitor(Performance.TIME_PROCESS)*1000,get_tree().get_nodes_in_group("zombies").size(),game.state.objects.size(),Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)]
 func toast(value:String):
  message.text=value;notice_left=3.0
 func clear_panel():

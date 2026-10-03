@@ -56,7 +56,8 @@ func configure(owner_game):
  make_multimesh("grass",grasses)
  for i in range(7):
   var at=Vector3(3.2 if i%2 else -3.1,0,-55+i*17)
-  var car=game.assets.model("car");add_child(car);car.position=at;car.rotation.y=.15 if i%2 else -.22;collider(at+Vector3(0,.6,0),Vector3(2,1.2,4.2),true)
+  var car=game.assets.model("car");add_child(car);car.position=at;car.rotation.y=.15 if i%2 else -.22
+  var body=collider(at+Vector3(0,.775,0),Vector3(2,1.55,4.2),true);body.rotation.y=car.rotation.y
  # Landmark: tall water tower assembled from modular structural definitions.
  for x in [-2,2]:
   for z in [-2,2]:box(Vector3(-48+x,6,-8+z),Vector3(.25,12,.25),Color("5e746b"),true)
