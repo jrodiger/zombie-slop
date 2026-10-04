@@ -8,9 +8,9 @@ with tempfile.TemporaryDirectory(prefix='zombie-slop-tests-') as folder:
  for name in ['game','tests']:shutil.copytree(source/name,root/name)
  (root/'project.godot').write_text('config_version=5\n[application]\nconfig/name="Zombie Slop CI"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n')
  for script in ['game/game.gd','tests/integration.gd','tests/benchmark.gd']:
-  result=subprocess.run([a.godot,'--headless','--path',folder,'--check-only','--script','res://'+script],check=True,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+  result=subprocess.run([a.godot,'--headless','--path',folder,'--check-only','--script','res://'+script],check=False,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
   print(result.stdout,end='')
   # Godot can return zero even when --check-only reports a parse error.
-  if 'SCRIPT ERROR:' in result.stdout or 'ERROR:' in result.stdout:raise SystemExit('Godot script check failed: '+script)
+  if result.returncode!=0 or 'SCRIPT ERROR:' in result.stdout or 'ERROR:' in result.stdout:raise SystemExit('Godot script check failed: '+script)
  subprocess.run([a.godot,'--headless','--path',folder,'--script','res://tests/state_test.gd'],check=True)
 subprocess.run(['python3',str(source/'scripts/check_source.py')],check=True)

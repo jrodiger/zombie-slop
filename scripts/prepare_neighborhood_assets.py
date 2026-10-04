@@ -264,8 +264,9 @@ if not a.export_only:
         save(name)
     assert hashlib.sha256(original.read_bytes()).hexdigest() == before
 
-export('survivor', private / 'quaternius/survivor.blend')
 for path in sorted(working.glob('*.blend')):
     export(path.stem, path)
 (out / 'neighborhood-exports.json').write_text(json.dumps({'exports': records, 'adapter': 'scripts/prepare_neighborhood_assets.py'}, indent=2) + '\n')
 print('NEIGHBORHOOD EXPORTS', len(records), flush=True)
+if not a.export_only:
+    print('Re-export the changed survivor with scripts/adapt_quaternius.py --export-only before assembly.', flush=True)

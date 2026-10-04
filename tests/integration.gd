@@ -75,6 +75,10 @@ func run(owner_game):
  check(game.player.animation!=null and game.player.animation.get_animation_list().size()>=8,"Imported skeleton has eight animation clips")
  check(game.player.weapon_visuals.size()==3,"Imported survivor carries three switchable pack weapons")
  check(game.world.HOUSES.size()==14 and game.world.containers.size()==42,"Expanded neighborhood has fourteen accessible homes and 42 containers")
+ for item in game.world.loot:
+  var probe=Vector3(item.node.position.x,.2,item.node.position.z+.9)
+  var selectable=game.world.nearest_loot(probe)
+  check(selectable!=null and selectable.id==item.id,"Every designated furnishing can be reached by the loot ray: "+item.kind)
  game.assets.animate(game.player.animation,"Aim",0);await wait(.15)
  var muzzle=game.player.flash.get_parent()
  check(muzzle.name=="PistolMuzzle","Muzzle flash uses the pack weapon socket")
@@ -194,6 +198,10 @@ func run(owner_game):
  check(is_equal_approx(game.placement_yaw-rotation_before,PI/12) and game.placement_distance==distance_before,"Mouse wheel rotates placement without changing distance")
  rotation_before=game.placement_yaw;wheel.shift_pressed=true;game._unhandled_input(wheel)
  check(is_equal_approx(game.placement_yaw-rotation_before,deg_to_rad(5)),"Shift-wheel gives five-degree fine rotation");game.cancel_placement()
+ game.begin_placement("wall");game.snap=true;rotation_before=game.placement_yaw;wheel.shift_pressed=false;game._unhandled_input(wheel);game.update_placement()
+ check(is_equal_approx(game.placement_yaw-rotation_before,PI/2),"Snapped construction wheel rotation survives the preview update")
+ var rotate=InputEventAction.new();rotate.action="rotate_right";rotate.pressed=true;rotation_before=game.placement_yaw;game._unhandled_input(rotate);game.update_placement()
+ check(is_equal_approx(game.placement_yaw-rotation_before,PI/2),"Snapped keyboard/pad rotation survives the preview update");game.snap=false;game.cancel_placement()
  game.begin_placement("plant");game.state.health=75;game.state.magazine=11
  for action in ["reload","heal","jump"]:Input.action_press(action)
  for i in range(3):await get_tree().physics_frame

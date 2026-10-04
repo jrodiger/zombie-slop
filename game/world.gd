@@ -294,7 +294,7 @@ func add_loot(ident:String,kind:String,at:Vector3,amount:int=1):
 func seed_loot():
  add_loot("fern","plant",Vector3(-12,.1,13))
  add_loot("radio","radio",Vector3(21.5,1.155,3.2))
- add_loot("chair","chair",Vector3(-28,.16,3))
+ add_loot("chair","chair",Vector3(-26,.16,5))
  add_loot("table","table",Vector3(28,.16,10))
  add_loot("guitar","guitar",Vector3(27,.2,-34))
  add_loot("shelf","shelf",Vector3(21,.16,-34))

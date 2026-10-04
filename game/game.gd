@@ -101,8 +101,9 @@ func _unhandled_input(event):
  if placement_kind!="":
   if event.is_action_pressed("cancel"):cancel_placement();return
   if event.is_action_pressed("confirm"):confirm_placement();return
-  if event.is_action_pressed("rotate_left"):placement_yaw-=PI/12
-  if event.is_action_pressed("rotate_right"):placement_yaw+=PI/12
+  var rotation_step=PI/2 if snap and catalog.built(placement_kind) else PI/12
+  if event.is_action_pressed("rotate_left"):placement_yaw-=rotation_step
+  if event.is_action_pressed("rotate_right"):placement_yaw+=rotation_step
   if event.is_action_pressed("height_up"):placement_height+=.1
   if event.is_action_pressed("height_down"):placement_height-=.1
   if event.is_action_pressed("distance_up"):placement_distance=minf(8,placement_distance+.25)
@@ -110,7 +111,7 @@ func _unhandled_input(event):
   if event.is_action_pressed("snap"):snap=not snap
   if event is InputEventMouseButton:
    if event.pressed:
-    var increment=deg_to_rad(5 if event.shift_pressed else 15)
+    var increment=rotation_step if snap and catalog.built(placement_kind) else deg_to_rad(5 if event.shift_pressed else 15)
     if event.button_index==MOUSE_BUTTON_WHEEL_UP:placement_yaw+=increment
     if event.button_index==MOUSE_BUTTON_WHEEL_DOWN:placement_yaw-=increment
   return

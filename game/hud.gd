@@ -69,7 +69,7 @@ func _process(delta):
  prompt.text=game.interaction_prompt()
  placement.visible=game.placement_kind!=""
  if placement.visible:
-  placement.text="%s  ·  %s\n%s\nWheel / Q / R  rotate  ·  Shift + wheel  fine\n↑ / ↓  height  ·  + / −  distance  ·  T  snap\nLMB / A  place  ·  Esc / B  cancel"%[game.catalog.ITEMS[game.placement_kind].name,"SNAP" if game.snap else "FREE",game.placement_reason]
+  placement.text="%s  ·  %s\n%s\nWheel / Q / R  rotate  ·  Shift + wheel  fine (free)\n↑ / ↓  height  ·  + / −  distance  ·  T  snap\nLMB / A  place  ·  Esc / B  cancel"%[game.catalog.ITEMS[game.placement_kind].name,"SNAP" if game.snap else "FREE",game.placement_reason]
   placement.modulate=Color("c0db89") if game.placement_valid else Color("e99279")
  reticle.text="×" if game.hit_feedback>0 else ("+" if game.player.aiming else "·")
  damage.color.a=game.damage_feedback*.55

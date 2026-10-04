@@ -45,7 +45,9 @@ def main():
  # Discard obsolete shells and roadside crates from the disposable runtime.
  for f in list(assets.glob('kenney-*'))+[assets/'crate.glb',assets/'crate.glb.import']:
   if f.is_file():f.unlink()
- recipe=json.loads((private/'neighborhood/audio/audio_recipe.json').read_text())
+ recipe_path=private/'neighborhood/audio/audio_recipe.json'
+ if not recipe_path.is_file():raise SystemExit('Missing audio checkpoint: '+str(recipe_path)+'. Restore the matching private asset revision or prepare it with scripts/prepare_audio.py as documented in docs/SETUP.md.')
+ recipe=json.loads(recipe_path.read_text())
  for name,entry in recipe['effects'].items():
   f=exports/(name+'.wav')
   editable=private/'neighborhood/audio'/f.name
