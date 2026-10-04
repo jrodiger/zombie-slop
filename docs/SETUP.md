@@ -10,7 +10,7 @@ All defaults are relative to the current user's home, not a committed machine-sp
 ~/Documents/GitHub/zombie-slop/         public source checkout
 ~/Documents/GitHub/zombie-slop-assets/  private editable .blend sources, LFS, metadata
 ~/Documents/ZombieSlop/downloads/       pristine packs, source URLs, SHA-256, license texts
-~/Documents/ZombieSlop/generated/       reproducible GLB and original audio exports
+~/Documents/ZombieSlop/generated/       reproducible GLB and recorded/original audio exports
 ~/Documents/ZombieSlop/workspace/       assembled Godot project and .godot import cache
 ~/Documents/ZombieSlop/builds/          local playable exports; never uploaded publicly
 ~/Documents/ZombieSlop/tools/           pinned Godot, Blender, CLI utilities
@@ -32,7 +32,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
    python3 scripts/fetch_assets.py --originals "$HOME/Documents/ZombieSlop/downloads" --pack suburban
    ```
 
-3. Install official Apple Silicon Blender 4.5.14 LTS from [Blender's official mirror](https://mirror.blender.org/release/Blender4.5/blender-4.5.14-macos-arm64.dmg). Place Blender.app under the external tools folder. No proprietary or paid assets are required for this local iteration.
+3. Install official Apple Silicon Blender 4.5.14 LTS from [Blender's official mirror](https://mirror.blender.org/release/Blender4.5/blender-4.5.14-macos-arm64.dmg). Place Blender.app under the external tools folder. The free ITHappy props have a separate final-product license; no paid assets are required.
 
 4. Initialize or reuse the sibling private asset checkout. If it already has work, preserve it. Use an installed `git-lfs` path:
 
@@ -66,6 +66,21 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 
    Blender autosave is enabled in the generation process at two minutes and saved backup versions are set to two. For interactive work enable the same settings in Blender Preferences → Save & Load. Preserve the `.blend` files with editable rigs/actions/materials. The generator exports GLB explicitly with Y-up, eight animation actions, no texture dependencies for original models, and joins meshes for fewer draw calls. The swinging door keeps its pivot separate. Original deterministic audio is synthesized with seed 7; editable parameters are in the generator and private `recipe.json`.
 
+The iteration-three checkpoint adds private `neighborhood/` working sources and `neighborhood/audio/`. Preserve the complete user-downloaded Nature and Survival archives, their extracted `Blends/` trees and CC0 licenses under `downloads/nature/` and `downloads/survival/`. Preserve the complete ITHappy `Apocalypse_Free.blend` and official license evidence under `downloads/ithappy/`. Its textures are packed; no FBX/GLB download is required. Only props are adapted, never ITHappy characters.
+
+Re-export the matching private checkpoint after the original and Quaternius exports:
+
+```sh
+"$HOME/Documents/ZombieSlop/tools/Blender.app/Contents/MacOS/Blender" \
+  --background --python scripts/prepare_neighborhood_assets.py -- \
+  --home "$HOME/Documents/ZombieSlop" --assets ../zombie-slop-assets --export-only
+"$HOME/Documents/ZombieSlop/tools/Blender.app/Contents/MacOS/Blender" \
+  --background --python scripts/prepare_audio.py -- \
+  --home "$HOME/Documents/ZombieSlop" --assets ../zombie-slop-assets --export-only
+```
+
+Neighborhood exports are checked against editable-source and GLB hashes. Audio exports are copied from hash-verified private derivatives, so re-export does not change the working checkpoint. Creating new copies uses `prepare_neighborhood_assets.py` without `--export-only`; it refuses existing files unless `--resume` is specified. `--repair-poses` explicitly rebakes the survivor’s long-gun actions and retains Blender backups. `create_interiors.py` creates nine original house/furniture sources, refusing existing sources unless `--replace-existing` is explicit. `prepare_audio.py` creates a new private audio checkpoint from the downloaded CC0 recordings; Ogg decoding uses Blender’s audio library. These are normal Blender transformations, not image-generation inputs.
+
 6. Assemble and launch:
 
    ```sh
@@ -83,6 +98,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 python3 scripts/test_source.py --godot "$HOME/Documents/ZombieSlop/tools/Godot.app/Contents/MacOS/Godot"
 ./scripts/run.sh -- --integration
 ./scripts/run.sh -- --verify-load
+./scripts/run.sh -- --manual-test  # direct controls, separate save, preferences not written
 ```
 
 The first three produce only **local external builds**, including their embedded assets. They must not be added to the public repository, LFS, GitHub releases, or CI artifacts. macOS exports are ad-hoc signed for local use, not notarized. Windows/Linux are cross-exportable; run them on their respective hardware before marking them tested. Steam Deck controls and Android are targets, not verified platforms.
@@ -90,10 +106,10 @@ The first three produce only **local external builds**, including their embedded
 A ten-minute benchmark is included in the exported binary:
 
 ```sh
-"$HOME/Documents/ZombieSlop/builds/Zombie Slop.app/Contents/MacOS/Zombie Slop" -- --benchmark
+"$HOME/Documents/ZombieSlop/builds/Zombie Slop Iteration 3.app/Contents/MacOS/Zombie Slop" -- --benchmark
 ```
 
-It runs at 1280×800, uncapped, with shadows, 18 initial zombies and 50 placed objects. Add `--benchmark-low` after `--benchmark` to disable sun shadows, `--benchmark-capped` for real 60 FPS pacing, or `--benchmark-short` for a 60-second diagnosis. Run it alone, without another graphical test. The ten-minute run repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks. Run `--verify-load` in a fresh process after `--integration` to compare the exact saved base and contents against the prior process's expected arrangement.
+It runs at 1280×800, uncapped, with shadows, 18 living zombies and 50 placed objects. Add `--benchmark-low` after `--benchmark` to disable sun shadows, `--benchmark-capped` for real 60 FPS pacing, or `--benchmark-short` for a 60-second diagnosis. Run it alone, without another graphical test. The ten-minute run repeats six 50-second sections twice and measures actual graphical frame cadence. Test modes use separate saves, neutralize damage during profiling and replenish ammo during the shooting segment. Stress-mode enemy health stays high to retain eighteen living enemies throughout all sections. They do not establish physical controller or human playtest coverage. JSON metrics and PNGs go under the game's user data `verification/` directory or `ZOMBIE_REPORT_DIR`. Headless runs never count as rendering benchmarks. Run `--verify-load` in a fresh process after `--integration` to compare the exact saved base and contents against the prior process's expected arrangement.
 
 For an OpenGL comparison on macOS, put `--rendering-method gl_compatibility --rendering-driver opengl3` before the separating `--`. Metal's uncapped setting does not guarantee presentation above the display refresh rate; compare measured frame times and report the actual driver, cap and VSync state. Normal gameplay starts capped at 60 FPS, with VSync; the settings menu can disable the cap or sun shadows.
 
@@ -108,5 +124,8 @@ For an OpenGL comparison on macOS, put `--rendering-method gl_compatibility --re
 
 ## Selected pack status
 
-The Zombie Apocalypse Kit is installed from a complete manual Google Drive download, including editable Blender sources, its atlas and CC0 license. The runtime uses Matt, Zombie Basic, three firearms, a pickup truck and a chest. Survival and Ultimate Nature remain pending manual downloads after automated Drive quota failures. Their free archives can be put in the external `downloads/manual-inbox/survival/` and `downloads/manual-inbox/ultimate-nature/` folders. No quota bypass or paid purchase is used.
-ITHappy Apocalypse Free 1.1 offers Blender/FBX/OBJ/GLB and requires an account checkout. Its [free usage policy](https://ithappystudios.com/type-of-licenses/) prohibits as-is redistribution and derivatives outside a final product. It is not downloaded or privately uploaded here. No ITHappy characters are used. Account checkout/license verification is needed before incorporation. Original construction/furniture/vegetation remain while the other requested packs are pending.
+All three Quaternius packs are installed from complete user-provided downloads and carry CC0 licenses. Their pristine archives, source checksums and license texts remain external. Zombie Apocalypse supplies the player, zombies, firearms, truck, chest and several household/outdoor props. Survival supplies the radio and small medical/supply props; Ultimate Nature supplies trees, shrubs, grass and rocks.
+
+ITHappy Apocalypse Free is installed from the user’s Blender download. Packed textures were inspected and preserved. Selected non-character props are adapted: guitar, grill, stove, roadside barrier/sign and wrecked car. Its [free usage policy](https://ithappystudios.com/free-asset-usage-policy/) and [one-time licence agreement](https://ithappystudios.com/one-time-purchase-licence-agreement/) were preserved with the downloads and private working sources. Runtime use is within the final game; no as-is public asset redistribution is performed. The user-owned private checkout is an internal working copy/backup. The complex dirt/blood shader is simplified to the packed color atlas and rough PBR material for glTF portability. No ITHappy characters are used.
+
+Kenney City Kit remains preserved with the original downloads but its closed building shells are no longer assembled. Original editable bungalows with four siding palettes, roof/window/porch details, room partitions and searchable furniture replace them. Recorded CC0 gunshots/reloads from OpenGameArt and Kenney’s Impact Sounds replace the earlier synthetic effects; footsteps vary by surface and sample. Quiet original filtered wind replaces the pitched ambient hum. URLs, authors, checksums, transformations and licenses are recorded in the asset manifest and private audio recipe.

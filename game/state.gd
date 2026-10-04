@@ -1,6 +1,6 @@
 extends RefCounted
 const Catalog = preload("res://game/catalog.gd")
-const VERSION = 2
+const VERSION = 3
 var inventory:Dictionary = {}
 var objects:Array = []
 var collected:Array = []
@@ -19,7 +19,7 @@ var save_error:String = ""
 func _init():
  reset()
 func reset():
- inventory={"wood":0,"scrap":0,"ammo":48,"medkit":2,"rifle_ammo":0,"shells":0}
+ inventory={"wood":0,"scrap":0,"ammo":48,"medkit":2,"rifle_ammo":0,"shells":0,"food":0,"water":0}
  for k in Catalog.FURNITURE: inventory[k]=0
  objects=[]; collected=[]; next_id=1; kills=0
  objective={"supplies":false,"collectible":false,"returned":false,"decorated":false,"built":false}
@@ -103,13 +103,13 @@ static func valid_position(value) -> bool:
  return true
 static func validate(data) -> bool:
  if not data is Dictionary:return false
- if data.get("version")!=1 and data.get("version")!=VERSION:return false
+ if data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=VERSION:return false
  for k in ["inventory","objective","settings"]:
   if not data.get(k) is Dictionary:return false
  if not data.get("objects") is Array or not data.get("collected") is Array:return false
  if not valid_position(data.get("player_position")):return false
  var capacity=12
- if data.version==VERSION:
+ if data.version>=2:
   if not data.get("weapons") is Dictionary or not data.get("equipped") is String:return false
   if not data.weapons.has("pistol") or not data.weapons.has(data.equipped):return false
   for kind in data.weapons:
@@ -121,7 +121,8 @@ static func validate(data) -> bool:
  if not valid_count(data.get("kills")):return false
  if not (data.get("health") is float or data.get("health") is int) or not is_finite(float(data.health)) or data.health<0 or data.health>100:return false
  for k in Catalog.SUPPLIES+Catalog.FURNITURE:
-  if data.version==1 and k in ["rifle_ammo","shells"]:continue
+  if data.version==1 and k in ["rifle_ammo","shells"] and not data.inventory.has(k):continue
+  if data.version<3 and k in ["food","water"] and not data.inventory.has(k):continue
   if not valid_count(data.inventory.get(k)):return false
  for k in ["supplies","collectible","returned","decorated","built"]:
   if not data.objective.get(k) is bool:return false
@@ -152,7 +153,7 @@ static func validate(data) -> bool:
 func restore(data) -> bool:
  if not validate(data):return false
  inventory=data.inventory.duplicate(true); objects=data.objects.duplicate(true); collected=data.collected.duplicate()
- for key in ["rifle_ammo","shells"]:inventory[key]=int(inventory.get(key,0))
+ for key in ["rifle_ammo","shells","food","water"]:inventory[key]=int(inventory.get(key,0))
  for key in inventory:inventory[key]=int(inventory[key])
  for obj in objects:
   obj.id=int(obj.id);obj.yaw=float(obj.yaw);obj.hp=float(obj.hp)
@@ -160,9 +161,9 @@ func restore(data) -> bool:
   for key in obj.contents:obj.contents[key]=int(obj.contents[key])
  objective=data.objective.duplicate();player_position=data.player_position.duplicate();health=float(data.health)
  for i in range(3):player_position[i]=float(player_position[i])
- weapons=data.weapons.duplicate() if data.version==VERSION else {"pistol":int(data.magazine)}
+ weapons=data.weapons.duplicate() if data.version>=2 else {"pistol":int(data.magazine)}
  for key in weapons:weapons[key]=int(weapons[key])
- equipped=data.equipped if data.version==VERSION else "pistol"
+ equipped=data.equipped if data.version>=2 else "pistol"
  next_id=int(data.next_id);kills=int(data.kills);settings=data.settings.duplicate()
  settings.sensitivity=float(settings.sensitivity);settings.volume=float(settings.volume)
  return true

@@ -60,6 +60,15 @@ func _initialize():
  var gun_save=migrated.snapshot();var gun_load=State.new()
  check(gun_load.restore(gun_save) and gun_load.snapshot()==gun_save,"Equipped weapon and magazines persist exactly")
  check(not gun_load.equip("shotgun"),"Cannot equip an uncollected weapon")
+ var version_two=gun_save.duplicate(true);version_two.version=2;version_two.inventory.erase("food");version_two.inventory.erase("water")
+ var migrated_two=State.new()
+ check(migrated_two.restore(version_two),"Version two progress migrates")
+ check(migrated_two.weapons==gun_load.weapons and migrated_two.equipped==gun_load.equipped and migrated_two.objects==gun_load.objects,"Version two migration preserves guns and furnished base")
+ check(migrated_two.inventory.food==0 and migrated_two.inventory.water==0,"Migration adds empty food and water stacks")
+ var bad_legacy=version_two.duplicate(true);bad_legacy.inventory.food=-1
+ check(not migrated_two.restore(bad_legacy),"Legacy save cannot introduce a negative optional food stack")
+ bad_legacy.inventory.food=1.5
+ check(not migrated_two.restore(bad_legacy),"Legacy optional supplies must remain whole counts")
  var bad_gun=gun_save.duplicate(true);bad_gun.weapons.rifle=31;bad_gun.magazine=31
  check(not gun_load.restore(bad_gun),"Overfilled weapon magazine rejected")
  bad_gun=gun_save.duplicate(true);bad_gun.weapons.rifle=19

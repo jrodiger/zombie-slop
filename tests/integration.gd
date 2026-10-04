@@ -20,6 +20,40 @@ func tap(action:String):
  await get_tree().process_frame
  e=InputEventAction.new();e.action=action;e.pressed=false;Input.parse_input_event(e)
  await get_tree().process_frame
+func loot_container(ident:String,item_id:String):
+ var matches=game.world.containers.filter(func(entry):return entry.id==ident)
+ if matches.is_empty():check(false,"Container exists: "+ident);return
+ var entry=matches[0]
+ game.player.position=entry.node.position+Vector3(0,.05,-1.05);game.player.velocity=Vector3.ZERO;game.player.reset_physics_interpolation();await wait(.12)
+ game.interact();await wait(.1)
+ check(game.overlay and game.open_container_id==ident,"Interaction opens physical container: "+ident)
+ if game.open_container_id!=ident:return
+ var item=entry.stock.filter(func(value):return value.id==item_id)[0]
+ var label=game.catalog.WEAPONS[item.kind].name if item.kind in game.catalog.WEAPONS else item.kind.replace("_"," ").capitalize()
+ for child in game.ui.panel_content.get_children():
+  if child is Button and child.text.begins_with(label+"   ×"):
+   child.pressed.emit();break
+ await wait(.1)
+ check(item_id in game.state.collected,"Loot menu takes persistent stock: "+item_id)
+ check(not game.take_container_item(ident,item_id),"Repeated container pickup cannot duplicate: "+item_id)
+ game.close_overlay()
+func verify_long_gun(kind:String):
+ game.player.equip(kind);game.player.position=Vector3(-24,.2,22);game.player.visual.rotation.y=0;game.player.velocity=Vector3.ZERO
+ game.player.set_physics_process(false);game.player.set_process(false)
+ var skeleton=game.assets.skeleton(game.player.visual)
+ for clip in ["Idle","Walk","Run","Aim","Shoot","Reload"]:
+  game.player.animation.play(clip+"_"+kind.capitalize(),0);game.player.animation.seek(.1,true);await wait(.05)
+  var grip=game.player.visual.find_child(kind.capitalize()+"Grip",true,false)
+  var fore=game.player.visual.find_child(kind.capitalize()+"ForeGrip",true,false)
+  var hand=skeleton.global_transform*skeleton.get_bone_global_pose(skeleton.find_bone("Middle1.R")).origin
+  var barrel=game.player.visual.find_child(kind.capitalize()+"Muzzle",true,false).global_position-grip.global_position
+  print("POSE ",kind," ",clip," support=",hand.distance_to(fore.global_position)," right_x=",game.player.visual.to_local(grip.global_position).x," forward=",barrel.normalized().dot(game.player.visual.global_basis.z.normalized()))
+  check(game.player.visual.to_local(grip.global_position).x<0,kind+" "+clip+" uses the right firing hand")
+  if clip!="Reload":check(hand.distance_to(fore.global_position)<.12,kind+" "+clip+" support hand meets foregrip")
+ game.player.animation.play("Aim_"+kind.capitalize(),0);game.player.animation.seek(.1,true)
+ game.player.camera.global_position=game.player.position+Vector3(-2,1.55,2.5);game.player.camera.look_at(game.player.position+Vector3.UP*1.1);await wait(.15)
+ await capture("pose-"+kind)
+ game.player.set_physics_process(true);game.player.set_process(true)
 func place(kind:String,at:Vector3,yaw:float=0) -> int:
  game.player.position=at+Vector3(0,.4,-3)
  game.begin_placement(kind)
@@ -28,9 +62,9 @@ func place(kind:String,at:Vector3,yaw:float=0) -> int:
  var reason=game.validate_placement(kind,at,yaw)
  check(reason=="Ready to place",kind+" valid on supporting surface: "+reason)
  # Confirm through the actual transaction method, never directly create inventory records.
- game.confirm_placement()
+ var previous_count=game.state.objects.size();game.confirm_placement()
  await wait()
- if game.state.objects.is_empty():return -1
+ if game.state.objects.size()==previous_count:return -1
  return int(game.state.objects.back().id)
 func run(owner_game):
  game=owner_game
@@ -40,15 +74,23 @@ func run(owner_game):
  check(game.running and not game.overlay,"Start enters playable scene")
  check(game.player.animation!=null and game.player.animation.get_animation_list().size()>=8,"Imported skeleton has eight animation clips")
  check(game.player.weapon_visuals.size()==3,"Imported survivor carries three switchable pack weapons")
+ check(game.world.HOUSES.size()==14 and game.world.containers.size()==42,"Expanded neighborhood has fourteen accessible homes and 42 containers")
  game.assets.animate(game.player.animation,"Aim",0);await wait(.15)
  var muzzle=game.player.flash.get_parent()
  check(muzzle.name=="PistolMuzzle","Muzzle flash uses the pack weapon socket")
  check((muzzle.global_position-game.player.visual.find_child("PistolGrip",true,false).global_position).normalized().dot(game.player.visual.global_basis.z.normalized())>.85,"Pack weapon barrel faces character forward in aiming pose")
+ check(game.player.visual.to_local(game.player.visual.find_child("PistolGrip",true,false).global_position).x<0,"Pistol grip is on the character's right side")
  var before=game.player.position
  for i in range(45):
   game.player.yaw=PI;Input.action_press("forward");await get_tree().physics_frame
  Input.action_release("forward")
  check(game.player.position.distance_to(before)>2,"Third-person movement responds to input")
+ game.player.sprint_energy=.2;Input.action_press("forward");Input.action_press("sprint");await wait(.7)
+ check(game.player.sprint_exhausted and not game.player.sprinting and game.player.sprint_energy>5,"Exhausted sprint stays walking while the button is held")
+ await wait(.4);check(not game.player.sprinting and Vector2(game.player.velocity.x,game.player.velocity.z).length()<4.3,"Stamina recovery cannot pulse back into sprint")
+ Input.action_release("sprint");await wait(1.1);Input.action_press("sprint");await wait(.1)
+ check(game.player.sprinting,"Recovered stamina allows sprint after releasing and pressing again")
+ Input.action_release("forward");Input.action_release("sprint")
  # Walk across the actual street curb and raised doorway without jumping.
  game.player.position=Vector3(4.7,.2,15);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;game.player.reset_physics_interpolation();await wait(.2)
  Input.action_press("forward");await wait(1.0);Input.action_release("forward")
@@ -97,17 +139,18 @@ func run(owner_game):
  game.player.take_damage(25);check(game.state.health==75,"Player damage applies")
  game.player.heal();check(game.state.health==100 and game.state.inventory.medkit==1,"Healing consumes one medkit")
  # Actual world pickups, weapon switching and interrupted reload conservation.
- game.player.position=Vector3(-19,.2,0);await wait(.1);game.interact();await wait(.1)
+ await loot_container("12-cedar-lane-safe","shotgun-porch")
  check(game.state.equipped=="shotgun" and game.state.magazine==0,"Looting shotgun equips the pack model unloaded")
- game.player.position=Vector3(-19,.2,2);await wait(.1);game.interact();game.player.reload();await wait(2.8)
+ await loot_container("12-cedar-lane-safe","shotgun-shells");game.player.reload();await wait(2.8)
  check(game.state.magazine==6 and game.state.inventory.shells==12,"Shotgun reload spends exactly six shells")
  game.player.shot_cooldown=0;game.player.shoot();check(game.state.magazine==5,"Six shotgun pellets consume one shell")
  game.player.reload();var shells=game.state.inventory.shells;game.player.equip("pistol");await wait(.3)
  check(game.player.reload_left==0 and game.state.inventory.shells==shells and game.state.weapons.shotgun==5,"Switching cancels reload without spending or duplicating ammunition")
- game.player.position=Vector3(25,.2,-32);await wait(.1);game.interact();await wait(.1)
+ await loot_container("8-cedar-lane-safe","rifle-supply")
  check(game.state.equipped=="rifle" and game.state.weapons.has("rifle"),"Supply house contains lootable rifle")
- game.player.position=Vector3(25,.2,-30);await wait(.1);game.interact();game.player.reload();await wait(2.3)
+ await loot_container("8-cedar-lane-safe","rifle-rounds");game.player.reload();await wait(2.3)
  check(game.state.magazine==30 and game.state.inventory.rifle_ammo==60,"Rifle reload uses separate reserve rounds")
+ await verify_long_gun("rifle");await verify_long_gun("shotgun");game.player.equip("rifle")
  var gun_target=get_tree().get_nodes_in_group("zombies").filter(func(enemy):return enemy.alive)[0]
  game.player.position=Vector3(0,.2,9.5);game.player.velocity=Vector3.ZERO;game.player.yaw=0;game.player.pitch=0;game.player.reset_physics_interpolation()
  gun_target.position=Vector3(.65,.2,6);gun_target.velocity=Vector3.ZERO;gun_target.stagger=5;gun_target.hp=100
@@ -126,7 +169,16 @@ func run(owner_game):
  await tap("weapon_next");check(game.state.equipped=="rifle" and game.player.weapon_visuals.rifle.is_visible_in_tree() and not game.player.weapon_visuals.pistol.is_visible_in_tree(),"Cycle input selects the next owned gun and its visible model")
  await tap("weapon_next");await tap("weapon_next")
  await capture("02-street")
- for entry in [["porch-wood",Vector3(-19,.2,23)],["porch-scrap",Vector3(-19,.2,21)],["fern",Vector3(-12,.2,13)],["radio",Vector3(11,.2,4)]]:
+ await loot_container("14-cedar-lane-drawer","porch-wood")
+ await loot_container("14-cedar-lane-drawer","porch-scrap")
+ game.player.position=Vector3(-20,.2,24.5);game.player.velocity=Vector3.ZERO;await wait(.1)
+ check(game.world.nearest_container(game.player.position)==null,"House wall and glass prevent searching drawers from outside")
+ await loot_container("14-cedar-lane-fridge","14-cedar-lane-food")
+ game.state.health=80;game.player.use_supply("food")
+ check(game.state.health==95 and game.state.inventory.food==1,"Refrigerator food restores health and consumes exactly one item")
+ game.state.health=100;game.player.use_supply("food")
+ check(game.state.inventory.food==1,"Full health cannot waste a food item")
+ for entry in [["fern",Vector3(-12,.2,13)],["radio",Vector3(21.5,.2,4.2)]]:
   game.player.position=entry[1];await wait(.1);game.interact();await wait(.1)
  check(game.state.inventory.plant==1 and game.state.inventory.radio==1,"Collect multiple actual world objects")
  check(game.state.inventory.wood==12 and game.state.inventory.scrap==4,"Collect world construction materials")
@@ -137,6 +189,11 @@ func run(owner_game):
  var untouched=game.state.snapshot()
  game.begin_placement("plant");await wait(.1);game.cancel_placement()
  check(game.state.snapshot()==untouched,"Cancel preview leaves inventory and identity unchanged")
+ game.begin_placement("plant");var rotation_before=game.placement_yaw;var distance_before=game.placement_distance
+ var wheel=InputEventMouseButton.new();wheel.button_index=MOUSE_BUTTON_WHEEL_UP;wheel.pressed=true;game._unhandled_input(wheel)
+ check(is_equal_approx(game.placement_yaw-rotation_before,PI/12) and game.placement_distance==distance_before,"Mouse wheel rotates placement without changing distance")
+ rotation_before=game.placement_yaw;wheel.shift_pressed=true;game._unhandled_input(wheel)
+ check(is_equal_approx(game.placement_yaw-rotation_before,deg_to_rad(5)),"Shift-wheel gives five-degree fine rotation");game.cancel_placement()
  game.begin_placement("plant");game.state.health=75;game.state.magazine=11
  for action in ["reload","heal","jump"]:Input.action_press(action)
  for i in range(3):await get_tree().physics_frame
@@ -163,14 +220,14 @@ func run(owner_game):
  game.player.position=Vector3(-27,.3,29);game.pickup_nearest();await wait(.2)
  check(game.state.inventory.plant==1 and game.state.find_object(fern).is_empty(),"Recover placed object to inventory")
  await place("plant",Vector3(-28,.175,29),1.2)
- var barrier=await place("barricade",Vector3(-24,.015,22),0)
+ var barrier=await place("barricade",Vector3(-24,.085,22),0)
  check(game.objective_complete(),"Complete starter objective and continue sandbox")
  game.state.inventory.wood+=30;game.state.inventory.scrap+=10
- var chest=await place("storage",Vector3(-20,.175,29),.5)
+ var chest=await place("storage",Vector3(-20,.175,31.8),.5)
  check(game.state.transfer(chest,"wood",7,true),"Deposit supplies in built chest")
  check(game.state.transfer(chest,"radio",0,true)==false,"Zero transfer is safely rejected")
  game.ui.storage_menu(chest);await capture("03-storage");game.close_overlay()
- var door_id=await place("door",Vector3(-24,.015,24.3),0)
+ var door_id=await place("door",Vector3(-24,.135,24.3),0)
  var door
  for p in get_tree().get_nodes_in_group("placed"):
   if int(p.data.id)==door_id:door=p
@@ -209,6 +266,10 @@ func run(owner_game):
  game.rebuild();await wait(.3)
  check(get_tree().get_nodes_in_group("placed").size()==snapshot.objects.size(),"Load restores one physics object per saved identity")
  check(game.world.loot.filter(func(item):return item.id=="fern").is_empty(),"Collected world object stays absent after reload")
+ var home_drawer=game.world.containers.filter(func(entry):return entry.id=="14-cedar-lane-drawer")[0]
+ check(game.world.container_items(home_drawer).is_empty(),"Searched container contents stay removed after reload")
+ var home_fridge=game.world.containers.filter(func(entry):return entry.id=="14-cedar-lane-fridge")[0]
+ check(game.world.container_items(home_fridge).size()==1 and game.world.container_items(home_fridge)[0].kind=="water","Partially looted refrigerator preserves its remaining contents after reload")
  await capture("04-furnished-base")
  game.ui.pause();await capture("05-pause");game.ui.settings();await capture("06-settings");game.close_overlay()
  # Test supported gamepad event mapping without claiming a physical controller.
@@ -219,6 +280,11 @@ func run(owner_game):
  check(not game.running and game.player.reload_left==0,"Death interrupts reload without duplicating ammo")
  await capture("07-death")
  game.new_game();await wait(.3);check(game.running and game.state.health==100,"Restart creates fresh playable state")
+ var respawn_victim=get_tree().get_nodes_in_group("zombies")[0];respawn_victim.take_damage(100)
+ var live_before=get_tree().get_nodes_in_group("zombies").filter(func(enemy):return enemy.alive).size()
+ var replacement=game.world.try_respawn()
+ check(replacement and get_tree().get_nodes_in_group("zombies").filter(func(enemy):return enemy.alive).size()==live_before+1,"Killed zombie is replaced away from player and home")
+ check(not game.world.try_respawn(),"Respawning respects the eighteen-zombie population cap")
  # Exercise the model fallback shape without emitting a missing-file error.
  var original_zombie=game.assets.scenes.zombie
  var empty_scene=PackedScene.new();var empty_model=Node3D.new();empty_scene.pack(empty_model);empty_model.free()
