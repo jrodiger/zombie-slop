@@ -1,5 +1,7 @@
 extends CharacterBody3D
 const Movement=preload("res://game/movement.gd")
+const Motion=preload("res://game/character_motion.gd")
+var motion
 var game
 var driving=null
 var melee_left:float=0
@@ -32,6 +34,7 @@ func configure(owner_game):
  var material=StandardMaterial3D.new();material.albedo_color=Color(1,.8,.25);material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;flash.material_override=material;flash.visible=false
  visual.add_child(flash);update_weapon()
  pivot=Node3D.new();add_child(pivot);camera=Camera3D.new();pivot.add_child(camera);camera.top_level=true;camera.physics_interpolation_mode=Node.PHYSICS_INTERPOLATION_MODE_OFF;camera.current=true;camera.fov=68;camera.far=170
+ var listener=AudioListener3D.new();listener.position.y=1.2;add_child(listener);listener.make_current()
 func _unhandled_input(event):
  if not game.running or game.overlay:return
  if "--integration" in OS.get_cmdline_user_args() or "--benchmark" in OS.get_cmdline_user_args():return
@@ -40,8 +43,12 @@ func _unhandled_input(event):
   pitch=clampf(pitch-event.relative.y*.0025*float(game.state.settings.sensitivity),-.95,.38)
 func _physics_process(delta):
  if game==null:return
- if not game.running or game.overlay:return
- if driving!=null:return
+ if not game.running or game.overlay:
+  if motion!=null:motion.update(0,false)
+  return
+ if driving!=null:
+  if motion!=null:motion.update(0,false)
+  return
  shot_cooldown=maxf(0,shot_cooldown-delta);hurt_left=maxf(0,hurt_left-delta);recoil=move_toward(recoil,0,delta*2)
  flash_left=maxf(0,flash_left-delta);firing_left=maxf(0,firing_left-delta)
  if flash!=null:flash.visible=flash_left>0
@@ -85,11 +92,12 @@ func _physics_process(delta):
  else:game.assets.animate(animation,weapon_clip("Aim") if aiming else locomotion_clip("Idle"),.18)
  if animation!=null:
   animation.speed_scale=animation.current_animation_length/float(profile().reload) if reload_left>0 and animation.current_animation_length>0 else 1.0
+ if motion!=null:motion.update(Vector2(velocity.x,velocity.z).length(),sprinting)
  if move.length()>.1 and is_on_floor():
   step_time-=delta
   if step_time<=0:
    var step=game.world.footstep(global_position);var variant=randi_range(0,2)
-   game.sound(step+("" if variant==0 else "-"+str(variant)),.38);step_time=.27 if sprinting else .44
+   game.sound(step+("" if variant==0 else "-"+str(variant)),.55);step_time=.27 if sprinting else .44
 func model_name(kind:String) -> String:
  return str(game.catalog.WEAPONS[kind].get("model",kind.capitalize()))
 func set_character(kind:String):
@@ -101,6 +109,7 @@ func set_character(kind:String):
   var weapon=visual.find_child(model_name(weapon_kind),true,false)
   if weapon!=null:weapon_visuals[weapon_kind]=weapon
  if is_instance_valid(flash):visual.add_child(flash) if flash.get_parent()==null else flash.reparent(visual,false);update_weapon()
+ motion=Motion.new();motion.configure(game,animation)
  game.state.character=kind;reload_left=0;melee_left=0;melee_pending=false
 func weapon_clip(clip:String) -> String:
  return clip.replace("_Gun","")+"_"+model_name(game.state.equipped)
@@ -200,4 +209,4 @@ func take_damage(amount:float):
  if hurt_left>0 or not game.running:return
  hurt_left=.6;game.state.health=maxf(0,game.state.health-amount);game.sound("hurt");game.damage_feedback=.45
  if game.state.health<=0:
-  reload_left=0;melee_left=0;melee_pending=false;game.assets.animate(animation,"Death",.1,false);game.die()
+  reload_left=0;melee_left=0;melee_pending=false;motion.stop();game.assets.animate(animation,"Death",.1,false);game.die()

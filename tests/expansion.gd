@@ -65,8 +65,8 @@ func run(owner_game,test_suite):
     game.player.animation.play(clip+model,0);game.player.animation.seek(.15,true);await wait(.02)
     var barrel=(muzzle.global_position-grip.global_position).normalized()
     check(game.player.visual.to_local(grip.global_position).x<0,character+" "+kind+" "+clip+" is right handed")
-    check(barrel.y<-.5 if clip=="LowerWalk_" else barrel.dot(game.player.visual.global_basis.z.normalized())>.85,character+" "+kind+" barrel lowers for travel and rises for aim")
-    if kind in ["rifle","shotgun","smg","compact_shotgun"]:
+    check(muzzle.global_position.y<grip.global_position.y-.15 if clip=="LowerWalk_" else barrel.dot(game.player.visual.global_basis.z.normalized())>.85,character+" "+kind+" barrel lowers for travel and rises for aim")
+    if clip=="Aim_" and kind in ["rifle","shotgun","smg","compact_shotgun"]:
      var fore=game.player.visual.find_child(model+"ForeGrip",true,false);var hand=skeleton.global_transform*skeleton.get_bone_global_pose(skeleton.find_bone("Middle1.R")).origin
      check(hand.distance_to(fore.global_position)<.14,character+" "+kind+" support hand meets foregrip")
    if kind=="rifle":

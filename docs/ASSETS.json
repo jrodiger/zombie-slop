@@ -3,8 +3,8 @@
   "blender": "4.5.14 LTS",
   "private_repository": "https://github.com/jrodiger/zombie-slop-assets",
   "private_visibility_verified": true,
-  "asset_commit": "0a8ad8b8603eb79375c2a4e3e0486120fe8e9174",
-  "private_push": "Private visibility and repository identity reverified immediately before upload. GitHub acknowledged all 32 changed/new LFS objects (278,219,280 source bytes, displayed 278 MB). Remote main matches 0a8ad8b8603eb79375c2a4e3e0486120fe8e9174; local git lfs fsck passed and the remotely committed Shaun LFS pointer was verified. Existing checkpoints, pristine inputs and Blender backups remain preserved. Account billing usage returned HTTP 404 because the existing token lacks user scope; no billing settings or paid-overage authorization were changed.",
+  "asset_commit": "1e3c5ee244bf9dfc2b84cd57eaea8a5a588a68d3",
+  "private_push": "Private visibility and repository identity reverified immediately before upload. GitHub acknowledged all 8 changed/new LFS objects (179,765,976 source bytes, displayed 180 MB). Remote main matches 1e3c5ee244bf9dfc2b84cd57eaea8a5a588a68d3; local git lfs fsck passed and the remotely committed Shaun LFS pointer was verified. Existing checkpoints, pristine inputs and Blender backups remain preserved. Account billing usage returned HTTP 404 because the existing token lacks user scope; no billing settings or paid-overage authorization were changed.",
   "packs": [
     {
       "name": "Kenney City Kit (Suburban)",
@@ -68,7 +68,7 @@
         "Environment/Blends/TrashBag_1.blend",
         "Environment/Blends/Chest_Special.blend"
       ],
-      "treatment": "Twenty-two private editable sources. Four author rigs keep their original clips/bone names, mirrored for right-handed use. Pose version 3 fits gun geometry around its sockets once, rotates all three finger roots together to preserve coherent palms, and bakes independent support-arm targets within reach, carry/aim/recoil and receiver reload gestures (54 actions per survivor). Six firearms and author melee clips remain on the same rig; no cross-rig retargeting. All six vehicle sources remain available: only three unarmored types spawn, and collected parts select their matching armored derivatives. Four road tiles are preserved but no longer rendered; one custom asphalt shader/mesh supplies matching road collision. Source/GLB hashes remain verified on export/assembly."
+      "treatment": "Twenty-two private editable sources. Four author rigs retain original clips/bone names, mirrored for right-handed use. Pose version 4 bakes selected arms and all four finger roots in Pose mode with a relaxed downward carry, controlled elbow bend, curled weapon grips, independent support-arm targets, recoil and receiver reload gestures (54 actions per survivor). Author leg curves remain untouched; runtime uses a separate locomotion layer so reload/fire do not freeze walking. Six firearms and same-rig author melee clips; no cross-rig retargeting. Three unarmored vehicle types spawn; collected parts select matching armored derivatives. Preserved road tiles are no longer rendered; one custom asphalt mesh supplies matching collision. Source/GLB hashes remain verified."
     },
     {
       "name": "Quaternius Survival Pack",
@@ -216,6 +216,19 @@
         }
       ],
       "treatment": "Recorded firearm shots trimmed at their first transient and normalized below clipping. Recorded reloads and Kenney impacts/footsteps decoded to 44100Hz mono PCM; nine footsteps provide three variations for grass, road and wood. Pristine recordings are retained; private audio_recipe.json has source and derivative hashes."
+    },
+    {
+      "name": "Zombies Sound Pack",
+      "author": "artisticdude",
+      "source": "https://opengameart.org/content/zombies-sound-pack",
+      "license": "CC0-1.0",
+      "archive_sha256": "8096ceeb4dac35d9eef9bfe0cc6649778d1eebf141b208d394ac338b9e5be314",
+      "files_used": [
+        "zombie-16.wav",
+        "zombie-17.wav",
+        "zombie-21.wav"
+      ],
+      "treatment": "Pristine archive and all 24 source recordings remain external. Three mono 44100Hz derivatives are normalized with edge fades and private source/derivative hashes. Nearby living zombies play occasional randomized positional recordings; bulky zombies are pitched lower. At most three voices play simultaneously; pause, range and death suspend them."
     }
   ],
   "original_assets": {
@@ -248,7 +261,7 @@
       "pistol",
       "crate"
     ],
-    "limitations": "Low-poly prototype; firearms use baked same-rig actions and broad hand contact rather than runtime individual-finger IK or detachable magazines. Armor is cosmetic; vehicles have no seated animation/fuel/damage. Raft, backpack and campfire mechanics remain decorative. ITHappy complex shader mixing remains simplified. No extra pack download was required.",
+    "limitations": "Low-poly prototype; firearms use baked same-rig actions and broad hand contact rather than runtime individual-finger IK or detachable magazines. Armor is cosmetic; vehicles have no seated animation/fuel/damage. Raft, backpack and campfire mechanics remain decorative. ITHappy complex shader mixing remains simplified. Nearby growls use licensed CC0 recordings documented above.",
     "district_generator": "scripts/create_district.py; private building-plans.json must agree with game/building_plans.json. Export-only reads sources without saving; --update-buildings deliberately regenerates only buildings and retains Blender backups."
   },
   "public_asset_files": []

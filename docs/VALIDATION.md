@@ -1,4 +1,58 @@
-# Current validation — iteration five
+# Current validation — iteration six
+
+Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal at 1280×800. Normal play retains a 60 FPS cap, VSync and shadows off. Steam Deck and physical controllers remain unverified.
+
+## Animation, scene and sound verification
+
+The source/save suite passes 106 checks. The exported native graphical suite passes 928 checks, with six further fresh-process checks confirming the exact saved arrangement, item identities and container contents. Tests use isolated saves; the user's normal progress and settings remain protected.
+
+All four survivor rigs were revised from preserved editable checkpoints. An incomplete selected-bones bake and an unreachable long-gun hand target were caught during native testing and corrected. The final bake selects only arm/finger bones in Pose mode, retains the author's original leg curves, curls all four finger roots, controls elbow direction, fits each weapon's barrel orientation, and samples the supporting hand independently. Carry poses put the firing hand beside the hip, with all six muzzles directed down and clear of the ground. Long guns use two hands while raised. The short, large-handed character proportions require diagonal long-gun carry; poses remain stylized rather than realistic human animation.
+
+A separate locomotion AnimationPlayer owns only root/body/leg tracks. Upper-body reload and firing actions own disjoint arm tracks, so neither freezes the legs. Walking/running cadence follows actual horizontal speed and blends through sprint exhaustion. Native checks cover all four survivors and six firearm carry/aim grips, foregrip reach, muzzle clearance and animated feet during moving reloads. Rendered captures cover all six guns from both sides, four survivors, multiple reload phases and walking/running gait phases. Representative screenshots were visually inspected, rather than assuming a passing grip-distance test proves a good pose.
+
+The exported room inspection walked 48 actual collision targets with zero failures across four homes and three shops. Multiple views cover living/dining arrangements, stairs, bedrooms, bathrooms, cabinet hinges, entrances and roofs. Couches face their TVs, dining chairs face their tables, shelf boards end between uprights, and mounted text clears awnings and sign poles. Scene captures also check car tires, raft hull/shore, oars, the cleared intersections and supported road bridges. The river is one opaque winding surface, with quieter moving ripples and smoother banks; road bridge decks share their visual and collision mesh. Small batched contact shadows improve grounding with sun shadows disabled. The occupied home TV-stand regression is checked after rebuilding an actual saved arrangement; its TV is omitted together with the stand.
+
+Nearby living zombies now play occasional recorded CC0 growls, with distance attenuation, quieter occluded playback, per-variant pitch and at most three simultaneous voices. Pause, range and death stop or suspend playback. The listener follows the survivor instead of the orbit camera. Engine gain is louder and no longer applies user volume twice; player surface footsteps are louder. Exported audio checks verify playback lifecycle and engine pitch. No subjective listening comparison or physical-controller session is claimed.
+
+Desktop control became available after the Mac was unlocked. In an isolated native session, automation clicked New Neighborhood, opened inventory, selected Lis and observed the updated model preview, closed it with Tab, dispatched movement/fire/reload input, opened the build menu and pause menu, then saved and quit. The displayed magazine/reserve and reload feedback confirmed firing/reloading. Blender’s graphical interface also opened the editable Shaun rig, displayed its Aim_Rifle action and framed the weapon grip. Temporary selection, hiding and viewport changes were discarded; the source hash still matches the private checkpoint. The full exploration/building/combat loop is covered by the exported scripted suite; this short desktop session does not imply human playtesting of every room or animation angle.
+
+The new recorded-audio workflow passed ten assertions across six actual CLI scenarios: complete export, derivative hash mismatch, incomplete manifest, missing manifest, partial-checkpoint overwrite refusal and private output isolation. A saved home arrangement now omits the TV together with its stand when the stand location is occupied.
+
+The initial ten-minute run found a 349.657 ms frame in placement preview (345.759 ms process monitor). The first-use preview created its transparent material during gameplay. The final code reuses one preview material, applies it before attaching previews to the scene tree, and instantiates a hidden warm-up preview at startup. This follows [Godot’s pipeline precompilation guidance](https://docs.godotengine.org/en/stable/tutorials/performance/pipeline_compilations.html); shader compilation is an inference from the first-use timing, not a measured GPU trace. The repeat sustained run below measures the correction without deleting system driver caches.
+
+## Sustained performance
+
+The final exported Mobile / Metal candidate completed **600.005 seconds** at **1280×800**, with **60 FPS cap / VSync on, shadows off**, **18 living zombies in every measured section** and **50 placed objects**. Eight equally timed views repeat twice, including real traversal, shots, placement preview, forest/river views and vehicle acceleration. No other graphical game, Blender, asset export or archive compression ran concurrently; lightweight source/docs work continued.
+
+- Average **59.97 FPS**; p50/p95/p99 **16.738 / 18.365 / 19.199 ms**.
+- **1% low 50.64 FPS**; maximum **23.795 ms**.
+- **74 of 35,984 frames exceeded 20 ms; none exceeded 25 or 33.333 ms**.
+- 19,601 frames exceeded the literal 16.667 ms boundary, including capped presentation jitter. This supports near-60 pacing with brief dips, rather than perfectly sustained 60 FPS or a Steam Deck claim.
+
+| View (two laps) | Average FPS | p99 ms | 1% low FPS |
+|---|---:|---:|---:|
+| 50-piece furnished base | 59.97 | 19.185 | 50.54 |
+| driving | 59.97 | 18.895 | 51.47 |
+| forest and river | 59.97 | 18.974 | 51.32 |
+| interior | 59.97 | 19.342 | 50.07 |
+| placement preview | 59.97 | 18.873 | 51.59 |
+| populated supply view | 59.97 | 19.496 | 49.95 |
+| shooting encounter | 59.97 | 19.355 | 50.21 |
+| street traversal | 59.98 | 19.116 | 50.84 |
+
+Sampled physics medians range from 2.53 to 4.65 ms, with 11.87 ms the largest sampled physics frame. Process monitors include presentation waiting and do not isolate render CPU cost. The report, stage-tagged hitch data and native viewport capture remain external under `verification/iteration6/performance-final/`. The initial result is retained under `verification/iteration6/performance/`. The removed large first-use hitch did not recur in this run; driver caches were not cleared, so this is not a guarantee for every cold driver/platform.
+
+## Review and asset protection
+
+The completed PR #5 full review found an export-only plan/checkpoint mismatch safeguard. A real Blender invocation against mismatched plans now stops before opening sources or producing exports, with update guidance. CodeRabbit confirmed the fix at `0d1390ab42bc73828f6854d7525a0bdb8949c66b`; all review threads were resolved and CI passed. Two fresh fully paginated clean polls at 20:02:09 and 20:03:17 UTC preceded an immediate expected-head squash merge. GitHub reports PR #5 merged on 2026-10-04 as `6b7eea9b1c19218e1ced7545848e0b4369ee2572`.
+
+This iteration uses a separate PR. The matching private editable checkpoint and acknowledged LFS upload are in ASSETS.json. Before/after survivor and shelf sources, pristine recordings/packs and Blender backups remain external. The stable application is still one `builds/Zombie Slop.app`, with cross exports beneath `builds/cross-platform/` and old build checkpoints retained in external backups. No assets, builds, media or LFS pointers enter public Git or CI artifacts.
+
+## Remaining limits
+
+The world and character proportions remain a stylized prototype. Baked weapon poses use broad hand contact, without individual-finger runtime IK or detachable magazines. Vehicles use arcade handling without seated animation, fuel or damage. Raft/backpack/campfire mechanics remain decorative. Zombies have ground-plane navigation without deliberate upstairs routing. Linux/Windows are cross-exported and not runtime-tested; Steam Deck and Android remain unverified.
+
+# Prior iteration-five validation
 
 Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal, 1280×800. Normal play retains a 60 FPS cap, VSync and shadows off. Steam Deck and physical controller feel remain unverified.
 

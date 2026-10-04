@@ -18,6 +18,7 @@ func configure(owner_game,id:String,model:String,at:Vector3,yaw:float):
  if game.state.vehicles.has(id):
   var saved=game.state.vehicles[id];position=Vector3(saved.position[0],saved.position[1],saved.position[2]);rotation.y=float(saved.yaw);armored=bool(saved.get("armored",false));set_physics_process(false)
  update_visual()
+ var contact=MeshInstance3D.new();contact.mesh=game.world.contact_mesh();contact.scale=Vector3(shape.size.x*1.25,1,shape.size.z*1.1);contact.position.y=.005;contact.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(contact)
  engine=AudioStreamPlayer3D.new();engine.stream=load("res://assets/vehicle-engine.wav");engine.max_distance=45;engine.unit_size=8;engine.volume_db=-80;add_child(engine)
  if engine.stream is AudioStreamWAV:
   engine.stream=engine.stream.duplicate();engine.stream.loop_mode=AudioStreamWAV.LOOP_FORWARD;engine.stream.loop_begin=0;engine.stream.loop_end=roundi(engine.stream.get_length()*engine.stream.mix_rate)
@@ -25,6 +26,7 @@ func update_visual():
  kind=("car-pickup-armored" if base_kind=="car" else base_kind+"-armored") if armored else base_kind
  if is_instance_valid(visual):remove_child(visual);visual.queue_free()
  visual=game.assets.model(kind);add_child(visual)
+ visual.position.y-=game.world.model_bounds(visual).position.y
 func upgrade() -> bool:
  if driver!=null or armored:return false
  game.state.vehicles[ident]=snapshot()
@@ -38,7 +40,7 @@ func _process(delta):
   var throttle=absf(Input.get_axis("back","forward"))
   engine_pitch=lerpf(engine_pitch,1.0+absf(speed)*.065+throttle*.3,1-exp(-delta*5))
   engine.pitch_scale=engine_pitch
-  engine.volume_db=linear_to_db(maxf(.0001,float(game.state.settings.volume)))+lerpf(-18,-10,clampf(absf(speed)/15,0,1))
+  engine.volume_db=lerpf(-12,-5,clampf(absf(speed)/15,0,1))
 func _physics_process(delta):
  if game==null or not game.running or game.overlay:return
  bump_left=maxf(0,bump_left-delta)
