@@ -78,13 +78,23 @@ def main():
  engine=private/'neighborhood/audio/vehicle-engine.wav';engine_export=exports/engine.name
  if not engine.is_file() or not engine_export.is_file() or hashlib.sha256(engine.read_bytes()).hexdigest()!=engine_recipe['sha256'] or hashlib.sha256(engine_export.read_bytes()).hexdigest()!=engine_recipe['sha256']:raise SystemExit('Missing/stale vehicle engine loop. Run scripts/create_vehicle_audio.py --export-only as documented.')
  shutil.copy2(engine_export,assets/engine.name)
+ growl_manifest=private/'neighborhood/audio/zombie-audio.json'
+ if not growl_manifest.is_file():raise SystemExit('Missing zombie sound checkpoint. Run scripts/prepare_zombie_audio.py --export-only as documented in docs/SETUP.md.')
+ growls=json.loads(growl_manifest.read_text())['effects']
+ if set(growls)!={'zombie-growl-0','zombie-growl-1','zombie-growl-2'}:raise SystemExit('Zombie sound checkpoint is incomplete.')
+ for name,entry in growls.items():
+  editable=private/'neighborhood/audio'/(name+'.wav');output=exports/editable.name
+  if not editable.is_file() or not output.is_file() or hashlib.sha256(editable.read_bytes()).hexdigest()!=entry['sha256'] or hashlib.sha256(output.read_bytes()).hexdigest()!=entry['sha256']:raise SystemExit('Missing/stale zombie sound: '+name+'. Run scripts/prepare_zombie_audio.py --export-only.')
+  shutil.copy2(output,assets/output.name)
  if (assets/'Textures').exists():shutil.rmtree(assets/'Textures')
  licenses=assets/'licenses';licenses.mkdir(exist_ok=True)
  for f in [home/'downloads/suburban/extracted/License.txt',home/'downloads/suburban/CC0-1.0.txt',private/'README.md',home/'downloads/zombie-apocalypse/extracted/License.txt']:
   if f.exists():shutil.copy2(f,licenses/('kenney-'+f.name if 'suburban' in str(f) else ('quaternius-'+f.name if 'zombie-apocalypse' in str(f) else f.name)))
- for pack in ['nature','survival','ithappy','audio']:
+ for pack in ['nature','survival','ithappy','audio','zombie-audio']:
   for f in (home/'downloads'/pack).glob('*license*'):
    if f.is_file():shutil.copy2(f,licenses/(pack+'-'+f.name))
+  f=home/'downloads'/pack/'CC0-license.txt'
+  if f.is_file():shutil.copy2(f,licenses/(pack+'-CC0-license.txt'))
   f=home/'downloads'/pack/'extracted/License.txt'
   if f.exists():shutil.copy2(f,licenses/(pack+'-License.txt'))
  f=home/'downloads/audio/impact/License.txt'

@@ -10,6 +10,7 @@ var elapsed:float=0
 var stage:int=-1
 var last_time:int=0
 var duration:float=600.0
+var hitches:Array=[]
 var shadows:bool=true
 var capped:bool=false
 const STAGES=["street traversal","populated supply view","interior","shooting encounter","50-piece furnished base","placement preview","forest and river","driving"]
@@ -71,6 +72,8 @@ func run(owner_game):
    var car=game.player.driving
    if car.position.z< -80:car.position=Vector3(0,.04,80);car.speed=0;car.velocity=Vector3.ZERO;car.reset_physics_interpolation()
   samples.append(ms);sections[STAGES[stage]].append(ms)
+  if ms>25:
+   hitches.append({"elapsed_seconds":elapsed,"stage":STAGES[stage],"frame_ms":ms,"physics_ms":Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)*1000,"process_ms":Performance.get_monitor(Performance.TIME_PROCESS)*1000})
   if samples.size()%60==0:
    draws.append(int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
    cpu[STAGES[stage]].physics.append(Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)*1000)
@@ -83,6 +86,7 @@ func run(owner_game):
  var stats=statistics(samples)
  var report={"engine":Engine.get_version_info().string,"exported":not OS.has_feature("editor"),"renderer":RenderingServer.get_current_rendering_method()+" / "+RenderingServer.get_current_rendering_driver_name(),"duration_seconds":elapsed,"resolution":[game.get_viewport().get_visible_rect().size.x,game.get_viewport().get_visible_rect().size.y],"settings":{"cap":capped,"max_fps":Engine.max_fps,"vsync_mode":DisplayServer.window_get_vsync_mode(),"shadows":shadows},"placed_objects":game.state.objects.size(),"enemy_count_by_section":counts,"overall":stats,"sections":{},"sampled_cpu_ms_and_draws":cpu,"method":"Automated graphical scene; eight equal segments repeated twice. Damage neutralized and ammo replenished only in benchmark. Includes route movement, camera pans, actual fire, live placement preview, forest/river view and real vehicle acceleration. A physical controller and human play session are not implied."}
  for name in sections:report.sections[name]=statistics(sections[name])
+ report.hitches_over_25ms=hitches
  var f=FileAccess.open(game.report_dir()+"/performance.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close()
  await RenderingServer.frame_post_draw
  game.get_viewport().get_texture().get_image().save_png(game.report_dir()+"/benchmark.png")

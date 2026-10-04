@@ -66,7 +66,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 
    Blender autosave is enabled in the generation process at two minutes and saved backup versions are set to two. For interactive work enable the same settings in Blender Preferences → Save & Load. Preserve the `.blend` files with editable rigs/actions/materials. The generator exports GLB explicitly with Y-up, eight animation actions, no texture dependencies for original models, and joins meshes for fewer draw calls. The swinging door keeps its pivot separate. Original deterministic audio is synthesized with seed 7; editable parameters are in the generator and private `recipe.json`.
 
-The iteration-five checkpoint extends private `neighborhood/` working sources and `neighborhood/audio/`. Preserve the complete user-downloaded Nature and Survival archives, their extracted `Blends/` trees and CC0 licenses under `downloads/nature/` and `downloads/survival/`. Preserve the complete ITHappy `Apocalypse_Free.blend` and official license evidence under `downloads/ithappy/`. Its textures are packed; no FBX/GLB download is required. Only props are adapted, never ITHappy characters.
+The current checkpoint extends private `neighborhood/` working sources and `neighborhood/audio/`. Preserve the complete user-downloaded Nature and Survival archives, their extracted `Blends/` trees and CC0 licenses under `downloads/nature/` and `downloads/survival/`. Preserve the complete ITHappy `Apocalypse_Free.blend` and official license evidence under `downloads/ithappy/`. Its textures are packed; no FBX/GLB download is required. Only props are adapted, never ITHappy characters.
 
 Re-export the matching private checkpoint after the original and Quaternius exports:
 
@@ -89,7 +89,11 @@ The private `district/` checkpoint adds six original building sources and sixtee
   --assets ../zombie-slop-assets --home "$HOME/Documents/ZombieSlop" --export-only
 python3 scripts/create_vehicle_audio.py --assets ../zombie-slop-assets \
   --home "$HOME/Documents/ZombieSlop" --export-only
+python3 scripts/prepare_zombie_audio.py --assets ../zombie-slop-assets \
+  --home "$HOME/Documents/ZombieSlop" --export-only
 ```
+
+The zombie audio checkpoint uses artisticdude's CC0 [Zombies Sound Pack](https://opengameart.org/content/zombies-sound-pack). Preserve `zombies.zip`, all extracted recordings, license and provenance under `downloads/zombie-audio/`; extraction places WAV files in `extracted/zombies/`. Creation without `--export-only` makes three normalized mono derivatives once and refuses an existing checkpoint. Re-export checks hashes and copies derivatives without modifying their source. No sound files belong in the public repository.
 
 Creation refuses existing district sources. `--update-buildings` explicitly rebuilds only the six original buildings from changed plans and keeps Blender backups; props stay preserved. Neighborhood `--resume --update-props NAME...` deliberately rebuilds named adapted props and keeps backups. Export-only modes do not save editable sources. Original engine regeneration requires `--replace-existing`; preserve an external backup before using it. The mossy log retains uniform author proportions. The new raft, paddle and special chest derive from the existing downloaded packs. The engine loop is deterministic original audio, with a private parameter/hash recipe.
 

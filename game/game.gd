@@ -16,6 +16,7 @@ var running:bool=false
 var overlay:bool=false
 var placement_kind:String=""
 var placement_preview:Node3D
+var placement_material=StandardMaterial3D.new()
 var placement_position=Vector3.ZERO
 var placement_yaw:float=0
 var placement_height:float=0
@@ -42,6 +43,10 @@ func _ready():
  if "--benchmark" in OS.get_cmdline_user_args():save_path="user://benchmark-survival.json"
  inputs();load_settings();create_world()
  ui=Hud.new();add_child(ui);ui.configure(self);ui.start_screen();apply_settings()
+ # Instantiate the transparent preview during startup, before its first use.
+ # Loading a scene alone does not prepare a material_override pipeline.
+ var preview_warmup=assets.model("wall");preview_warmup.name="PlacementWarmup";preview_warmup.visible=false
+ ghost_material(preview_warmup,Color(.5,.9,.4,.5));add_child(preview_warmup)
  for i in range(12):var s=AudioStreamPlayer.new();add_child(s);sound_players.append(s)
  ambience=AudioStreamPlayer.new();ambience.stream=load("res://assets/ambient.wav");ambience.volume_db=-9;add_child(ambience);ambience.finished.connect(func():ambience.play());ambience.play()
  if "--integration" in OS.get_cmdline_user_args():call_deferred("integration")
@@ -215,6 +220,12 @@ func quit_game():
 func finish_run(code:int=0):
  if ambience!=null:ambience.stop();ambience.stream=null
  for speaker in sound_players:speaker.stop();speaker.stream=null
+ for enemy in get_tree().get_nodes_in_group("zombies"):
+  enemy.set_process(false)
+  if enemy.growl!=null:enemy.growl.stop();enemy.growl.stream=null
+ for car in get_tree().get_nodes_in_group("vehicles"):
+  car.set_process(false)
+  if car.engine!=null:car.engine.stop();car.engine.stream=null
  get_tree().call_deferred("quit",code)
 func toast(value:String):
  if ui!=null:ui.toast(value)
@@ -290,7 +301,7 @@ func begin_placement(kind:String,ident:int=-1):
  if ident<0 and not state.can_afford(kind):toast("Collect this object or gather its materials first");return
  cancel_placement();close_overlay();placement_kind=kind;moving_id=ident;placement_height=0;placement_distance=4;placement_yaw=player.yaw
  if ident>=0:placement_yaw=float(state.find_object(ident).yaw)
- placement_preview=assets.model(catalog.ITEMS[kind].asset);add_child(placement_preview);ghost_material(placement_preview,Color(.5,.9,.4,.5))
+ placement_preview=assets.model(catalog.ITEMS[kind].asset);ghost_material(placement_preview,Color(.5,.9,.4,.5));add_child(placement_preview)
 func cancel_placement():
  placement_kind="";moving_id=-1
  if is_instance_valid(placement_preview):placement_preview.queue_free()
@@ -299,9 +310,7 @@ func cancel_if_moving(ident:int):
  if ident==moving_id:cancel_placement()
 func ghost_material(root:Node,color:Color):
  if root is MeshInstance3D:
-  var material=root.material_override
-  if material==null:material=StandardMaterial3D.new()
-  material.albedo_color=color;material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;root.material_override=material;root.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  placement_material.albedo_color=color;placement_material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;placement_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;root.material_override=placement_material;root.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
  for child in root.get_children():ghost_material(child,color)
 func moving_rid() -> RID:
  for piece in get_tree().get_nodes_in_group("placed"):

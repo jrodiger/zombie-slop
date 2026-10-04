@@ -320,6 +320,7 @@ func run(owner_game):
  fallback_zombie.queue_free();game.assets.scenes.zombie=original_zombie;await wait(.1)
  var expanded=load("res://tests/expansion.gd").new();add_child(expanded);await expanded.run(game,self);expanded.queue_free()
  var district=load("res://tests/district.gd").new();add_child(district);await district.run(game,self);district.queue_free()
+ var polish=load("res://tests/polish.gd").new();add_child(polish);await polish.run(game,self);polish.queue_free()
  game.state.restore(snapshot);game.rebuild();game.running=true;game.close_overlay();game.state.save_to(game.save_path)
  var report={"checks":checks,"failures":failures,"graphical":DisplayServer.get_name()!="headless","engine":Engine.get_version_info().string,"physical_gamepad":false}
  var f=FileAccess.open(game.report_dir()+"/integration.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close()

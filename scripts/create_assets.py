@@ -122,7 +122,7 @@ for name in ['plant','radio','guitar','chair','table','shelf','storage','foundat
   if name=='chair':cube('Back',(0,.77,-.25),(.6,.46,.1),'timber')
  elif name=='shelf':
   for x in [-.7,.7]:cube('Upright',(x,.9,0),(.1,1.8,.5))
-  for y in [.1,.65,1.2,1.75]:cube('Shelf',(0,y,0),(1.5,.09,.5),'timber')
+  for y in [.1,.65,1.2,1.75]:cube('Shelf',(0,y,0),(1.3,.09,.5),'timber')
  elif name in ('storage','crate'):
   size=(1.1,.65,.7) if name=='storage' else (.65,.5,.5)
   cube('Box',(0,size[1]/2,0),size,'wood');cube('Lid',(0,size[1]-.04,0),(size[0]+.02,.08,size[2]+.02),'timber')

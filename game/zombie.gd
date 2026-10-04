@@ -17,6 +17,8 @@ var destination:Vector3
 var path:PackedVector3Array=[]
 var path_index:int=0
 var stagger:float=0
+var growl:AudioStreamPlayer3D
+var growl_left:float=0
 func configure(owner_game,spawn:Vector3,index:int):
  game=owner_game;floor_snap_length=.25;position=spawn;origin=spawn;destination=spawn;think_left=float(index)*.043;collision_layer=4;collision_mask=1
  variant=["zombie","zombie","zombie-chubby","zombie-arm","zombie-ribcage"][index%5]
@@ -25,6 +27,8 @@ func configure(owner_game,spawn:Vector3,index:int):
  var shape=CapsuleShape3D.new();shape.radius=.48 if variant=="zombie-chubby" else .34;shape.height=1.95 if variant=="zombie-chubby" else (1.05 if variant=="zombie-ribcage" else 1.75)
  var collider=CollisionShape3D.new();collider.shape=shape;collider.position.y=shape.height/2+.025;add_child(collider)
  visual=game.assets.model(variant);add_child(visual);animation=game.assets.animation(visual);add_to_group("zombies")
+ growl=AudioStreamPlayer3D.new();growl.position.y=.65 if variant=="zombie-ribcage" else 1.1;growl.max_distance=18;growl.unit_size=5;add_child(growl)
+ growl_left=randf_range(.4,2.0)+float(index%5)*.35
  # AI/collision remain live; hidden skeletons do not need pose updates. The
  # notifier follows the capsule and resumes the current clip when visible.
  var visibility=VisibleOnScreenNotifier3D.new();visibility.aabb=AABB(Vector3(-1,-.1,-1),Vector3(2,2.2,2));add_child(visibility)
@@ -33,6 +37,25 @@ func configure(owner_game,spawn:Vector3,index:int):
   animation.active=false
   visibility.screen_entered.connect(func():animation.active=true)
   visibility.screen_exited.connect(func():animation.active=false)
+func _process(delta):
+ if game==null or growl==null:return
+ if not alive:growl.stop();return
+ growl.stream_paused=not game.running or game.overlay
+ if growl.stream_paused or not is_instance_valid(game.player):return
+ if global_position.distance_to(game.player.global_position)>18:growl.stop();return
+ growl_left-=delta
+ if growl_left>0 or growl.playing:return
+ var voices=0
+ for enemy in get_tree().get_nodes_in_group("zombies"):
+  if enemy.growl!=null and enemy.growl.playing:voices+=1
+ if voices>=3:growl_left=.5;return
+ var name="zombie-growl-"+str(randi_range(0,2))
+ if not game.sound_cache.has(name):game.sound_cache[name]=load("res://assets/"+name+".wav")
+ growl.stream=game.sound_cache[name]
+ growl.pitch_scale=(.78 if variant=="zombie-chubby" else (1.12 if variant=="zombie-ribcage" else .96))+randf_range(-.05,.05)
+ var blocked=not get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(global_position+Vector3.UP,game.player.global_position+Vector3.UP,1,[get_rid()])).is_empty()
+ growl.volume_db=-15 if blocked else -7
+ growl.play();growl_left=randf_range(3,6)
 func _physics_process(delta):
  if game==null or not game.running or game.overlay or not alive:return
  think_left-=delta;attack_left=maxf(0,attack_left-delta);alerted=maxf(0,alerted-delta);stagger=maxf(0,stagger-delta)
@@ -74,4 +97,5 @@ func take_damage(amount:float):
  hp-=amount;alerted=15;stagger=.15
  if hp<=0:
   alive=false;collision_layer=0;game.state.kills+=1;game.assets.animate(animation,"Death",.05,false)
+  growl.stop()
   var timer=get_tree().create_timer(8);timer.timeout.connect(queue_free)
