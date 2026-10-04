@@ -22,6 +22,15 @@ func run(owner_game,test_suite):
     var wrist=bone(skeleton,"Middle1.L");var shoulder=bone(skeleton,"UpperArm.L")
     check(wrist.distance_to(grip.global_position)<.16,character+" "+kind+" "+pose+" grip stays in the firing hand")
     if pose=="LowerIdle":
+     var body_inverse=skeleton.get_bone_global_pose(skeleton.find_bone("Body")).affine_inverse()
+     var symmetry_error=0.0
+     for joint in ["UpperArm","LowerArm","Middle1"]:
+      var dominant=body_inverse*skeleton.get_bone_global_pose(skeleton.find_bone(joint+".L")).origin
+      var free=body_inverse*skeleton.get_bone_global_pose(skeleton.find_bone(joint+".R")).origin
+      symmetry_error=maxf(symmetry_error,dominant.distance_to(Vector3(-free.x,free.y,free.z)))
+     var elbow=bone(skeleton,"LowerArm.L")
+     check(symmetry_error<.012,character+" "+kind+" lowered shoulder/elbow/wrist mirror the free arm")
+     check((elbow-shoulder).normalized().dot((wrist-elbow).normalized())>.85,character+" "+kind+" lowered arm has a relaxed elbow without a backward zigzag")
      check(wrist.y<shoulder.y-.3 and absf(wrist.z-shoulder.z)<.25,character+" "+kind+" carry hand rests below the shoulder beside the body")
      check(muzzle.global_position.y<grip.global_position.y-.15 and muzzle.global_position.y>game.player.global_position.y+.025,character+" "+kind+" carry muzzle points down and clears the ground")
     else:

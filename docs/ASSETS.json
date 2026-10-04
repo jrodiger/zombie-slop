@@ -3,8 +3,8 @@
   "blender": "4.5.14 LTS",
   "private_repository": "https://github.com/jrodiger/zombie-slop-assets",
   "private_visibility_verified": true,
-  "asset_commit": "1e3c5ee244bf9dfc2b84cd57eaea8a5a588a68d3",
-  "private_push": "Private visibility and repository identity reverified immediately before upload. GitHub acknowledged all 8 changed/new LFS objects (179,765,976 source bytes, displayed 180 MB). Remote main matches 1e3c5ee244bf9dfc2b84cd57eaea8a5a588a68d3; local git lfs fsck passed and the remotely committed Shaun LFS pointer was verified. Existing checkpoints, pristine inputs and Blender backups remain preserved. Account billing usage returned HTTP 404 because the existing token lacks user scope; no billing settings or paid-overage authorization were changed.",
+  "asset_commit": "e58849c40fadb0b56e281e1a1579b28ee1e2f27c",
+  "private_push": "Private repository identity and PRIVATE visibility reverified immediately before upload. GitHub acknowledged all four final changed LFS sources (178194022 source bytes, displayed 178 MB). Remote main matches e58849c40fadb0b56e281e1a1579b28ee1e2f27c; local git lfs fsck passed and the remote Shaun LFS pointer matches. Intermediate and original editable milestones, pristine packs and Blender backups remain preserved externally. Billing usage inspection again returned HTTP 404 due to missing user scope; no scopes, billing settings or overage authorization were changed.",
   "packs": [
     {
       "name": "Kenney City Kit (Suburban)",
@@ -68,7 +68,7 @@
         "Environment/Blends/TrashBag_1.blend",
         "Environment/Blends/Chest_Special.blend"
       ],
-      "treatment": "Twenty-two private editable sources. Four author rigs retain original clips/bone names, mirrored for right-handed use. Pose version 4 bakes selected arms and all four finger roots in Pose mode with a relaxed downward carry, controlled elbow bend, curled weapon grips, independent support-arm targets, recoil and receiver reload gestures (54 actions per survivor). Author leg curves remain untouched; runtime uses a separate locomotion layer so reload/fire do not freeze walking. Six firearms and same-rig author melee clips; no cross-rig retargeting. Three unarmored vehicle types spawn; collected parts select matching armored derivatives. Preserved road tiles are no longer rendered; one custom asphalt mesh supplies matching collision. Source/GLB hashes remain verified."
+      "treatment": "Twenty-two private editable sources. Four author rigs retain original clips/bone names, mirrored for right-handed use. Pose version 6 replaces only the eighteen lowered actions per survivor: idle shoulder/elbow/wrist mirror the free arm, locomotion uses a restrained counter-phase shoulder swing and relaxed forearm, and coherent palm tilt keeps muzzles down. Aim, fire and reload action curves, geometry and rest bones remain identical to the previous checkpoint. All 54 firearm actions remain on each rig; raised poses keep selected-arm/finger baking, independent support targets and receiver reload gestures. Author leg curves remain untouched; runtime uses a separate locomotion layer so reload/fire do not freeze walking. Six firearms and same-rig author melee clips; no cross-rig retargeting. Three unarmored vehicle types spawn; collected parts select matching armored derivatives. Preserved road tiles are no longer rendered; one custom asphalt mesh supplies matching collision. Source/GLB hashes remain verified."
     },
     {
       "name": "Quaternius Survival Pack",

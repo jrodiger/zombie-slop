@@ -16,12 +16,14 @@ p.add_argument('--assets', type=Path, required=True)
 p.add_argument('--out', type=Path, required=True)
 p.add_argument('--update-characters', action='store_true', help='Rebuild survivor working copies with new weapons/poses; retains Blender backups.')
 p.add_argument('--repair-poses', action='store_true', help='Rebake all existing survivor working copies; retains Blender backups. Requires --resume.')
+p.add_argument('--repair-carry', action='store_true', help='Repair only lowered survivor arms; preserves aiming/fire/reload actions. Requires --resume.')
 mode = p.add_mutually_exclusive_group()
 mode.add_argument('--export-only', action='store_true')
 mode.add_argument('--resume', action='store_true')
 a = p.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if a.update_characters and a.export_only:raise SystemExit('--update-characters cannot be combined with --export-only')
 if a.repair_poses and (not a.resume or a.update_characters):raise SystemExit('--repair-poses requires --resume and cannot be combined with --update-characters')
+if a.repair_carry and (not a.resume or a.update_characters or a.repair_poses):raise SystemExit('--repair-carry requires --resume and cannot be combined with other character repairs')
 source = Path(__file__).resolve().parents[1]
 pack, private, out = (x.expanduser().resolve() for x in (a.pack, a.assets, a.out))
 for path in (pack, private, out):
@@ -189,6 +191,7 @@ for kind, relative in mapping.items():
     if a.export_only or (reuse and editable.exists() and not rebuilding):
         bpy.ops.wm.open_mainfile(filepath=str(editable))
         if a.repair_poses and kind.startswith('survivor'):right_handed(editable, repair=True)
+        if a.repair_carry and kind.startswith('survivor'):right_handed(editable,carry_only=True)
     else:
         bpy.ops.wm.open_mainfile(filepath=str(original))
         if kind.startswith(('survivor', 'zombie')):adapt_character(kind)
