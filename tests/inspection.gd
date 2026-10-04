@@ -66,7 +66,7 @@ func run(owner_game):
    await shot(name+"-"+entry.kind+"-open",target+entry.node.global_basis*Vector3(-1.8,.8,-1.8),target)
    game.world.close_containers()
  var raft=game.world.furnishings.filter(func(entry):return entry.kind=="raft")[0].node.global_position
- for view in [{"name":"fuel-forecourt","at":Vector3(-3,5,-115),"target":Vector3(20,1,-106)},{"name":"orchard-approach","at":Vector3(53,5,-49),"target":Vector3(72,1,-58)},{"name":"river-raft","at":raft+Vector3(-4,3,-5),"target":raft+Vector3.UP*.4},{"name":"forest-camp","at":Vector3(-104,7,43),"target":Vector3(-98,4,48)},{"name":"street-asphalt","at":Vector3(1,1,-45),"target":Vector3(0,.04,-52)}]:await shot(view.name,view.at,view.target)
+ for view in [{"name":"fuel-forecourt","at":Vector3(-3,5,-115),"target":Vector3(20,1,-106)},{"name":"orchard-approach","at":Vector3(51,5,-50),"target":Vector3(62,1,-42)},{"name":"river-raft","at":raft+Vector3(-4,3,-5),"target":raft+Vector3.UP*.4},{"name":"forest-camp","at":Vector3(-104,7,43),"target":Vector3(-98,4,48)},{"name":"street-asphalt","at":Vector3(1,1,-45),"target":Vector3(0,.04,-52)}]:await shot(view.name,view.at,view.target)
  game.ui.backpack();await shot("inventory-preview",game.player.camera.position,game.player.camera.position-game.player.camera.global_basis.z)
  game.close_overlay()
  var safe=game.world.containers.filter(func(entry):return entry.id=="8-cedar-lane-safe")[0]

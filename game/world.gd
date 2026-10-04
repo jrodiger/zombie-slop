@@ -68,7 +68,7 @@ func configure(owner_game):
  var bushes:Array[Transform3D]=[];var grasses:Array[Transform3D]=[];var rocks:Array[Transform3D]=[]
  for i in range(1650):
   var x=rng.randf_range(-158,158);var z=rng.randf_range(-158,158);var at=Vector3(x,ground_height(x,z),z)
-  if (x>76 and minf(absf(z+75),absf(z-55))<5) or river_distance(x,z)<8 or absf(x)<10 or absf(z+17)<8 or absf(z-65)<8 or absf(absf(x)-54)<6 or (absf(x+105)<4 and absf(z)<135) or near_house(at,12) or near_landmark(at,7):continue
+  if (x>4.5 and x<22.5 and z> -115.5 and z< -96.5) or (x>76 and minf(absf(z+75),absf(z-55))<5) or river_distance(x,z)<8 or absf(x)<10 or absf(z+17)<8 or absf(z-65)<8 or absf(absf(x)-54)<6 or (absf(x+105)<4 and absf(z)<135) or near_house(at,12) or near_landmark(at,7):continue
   var scale=rng.randf_range(.8,1.25);var t=Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*scale),at)
   if i%11==0:willows.append(t)
   elif i%4==0:pines.append(t)
@@ -78,7 +78,7 @@ func configure(owner_game):
   collider(at+Vector3.UP,Vector3(.55,2,.55),true)
  for i in range(5700):
   var x=rng.randf_range(-160,160);var z=rng.randf_range(-160,160);var at=Vector3(x,ground_height(x,z)+.035,z)
-  if near_house(at,9) or near_landmark(at,4.5) or river_distance(x,z)<4 or (x>76 and minf(absf(z+75),absf(z-55))<3):continue
+  if (x>4.5 and x<22.5 and z> -115.5 and z< -96.5) or near_house(at,9) or near_landmark(at,4.5) or river_distance(x,z)<4 or (x>76 and minf(absf(z+75),absf(z-55))<3):continue
   # Leave a worn strip on active routes; clumps grow along edges and cracks.
   if absf(x)<5.8 or absf(z+17)<4.8 or absf(z-65)<4.8 or absf(absf(x)-54)<4.2 or (absf(x+105)<2.3 and absf(z)<135):continue
   var scale=rng.randf_range(.7,1.4);var t=Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*scale),at)
