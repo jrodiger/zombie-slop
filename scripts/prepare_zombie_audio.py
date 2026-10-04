@@ -9,6 +9,7 @@ from prepare_audio import read_clip, write_clip, RATE
 
 
 def main():
+    """Preflight pristine recordings, protect their checkpoint and export verified clips."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--home', type=Path, default=Path.home() / 'Documents/ZombieSlop')
     parser.add_argument('--assets', type=Path, required=True)
@@ -26,13 +27,21 @@ def main():
     if not args.export_only:
         if manifest.exists() or any(target.glob('zombie-growl-*.wav')):
             raise SystemExit('Existing zombie audio checkpoint protected; use --export-only.')
+        sources = [home / 'downloads/zombie-audio/extracted/zombies' / f'zombie-{n}.wav'
+                   for n in (16, 17, 21)]
+        missing = [str(source) for source in sources if not source.is_file()]
+        if missing:
+            raise SystemExit('Missing zombie source recordings: ' + ', '.join(missing))
+        # Decode every input before creating a checkpoint so a bad later source
+        # cannot strand earlier derivatives without their manifest.
+        clips = [(source, read_clip(source), hashlib.sha256(source.read_bytes()).hexdigest())
+                 for source in sources]
         effects = {}
-        for index, original in enumerate((16, 17, 21)):
-            source = home / 'downloads/zombie-audio/extracted/zombies' / f'zombie-{original}.wav'
+        for index, (source, clip, source_hash) in enumerate(clips):
             name = f'zombie-growl-{index}'
-            write_clip(target / (name + '.wav'), read_clip(source), .65)
+            write_clip(target / (name + '.wav'), clip, .65)
             effects[name] = {'source': source.name,
-                             'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
+                             'source_sha256': source_hash,
                              'sha256': hashlib.sha256((target / (name + '.wav')).read_bytes()).hexdigest()}
         manifest.write_text(json.dumps({'author': 'artisticdude', 'license': 'CC0',
             'url': 'https://opengameart.org/content/zombies-sound-pack',

@@ -18,6 +18,8 @@ Desktop control became available after the Mac was unlocked. In an isolated nati
 
 The new recorded-audio workflow passed ten assertions across six actual CLI scenarios: complete export, derivative hash mismatch, incomplete manifest, missing manifest, partial-checkpoint overwrite refusal and private output isolation. A saved home arrangement now omits the TV together with its stand when the stand location is occupied.
 
+PR #6 review identified that a missing later source recording could strand an incomplete audio checkpoint. Preparation now checks all three paths and decodes all recordings before writing derivatives. Three missing-source CLI regressions leave no checkpoint or export; an actual malformed final recording also leaves no partial files. Restoring it and retrying produces the exact existing three derivative hashes and manifest. This tooling correction changes neither the private recordings nor the exported game runtime.
+
 The initial ten-minute run found a 349.657 ms frame in placement preview (345.759 ms process monitor). The first-use preview created its transparent material during gameplay. The final code reuses one preview material, applies it before attaching previews to the scene tree, and instantiates a hidden warm-up preview at startup. This follows [Godot’s pipeline precompilation guidance](https://docs.godotengine.org/en/stable/tutorials/performance/pipeline_compilations.html); shader compilation is an inference from the first-use timing, not a measured GPU trace. The repeat sustained run below measures the correction without deleting system driver caches.
 
 ## Sustained performance

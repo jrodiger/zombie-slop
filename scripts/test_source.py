@@ -14,3 +14,4 @@ with tempfile.TemporaryDirectory(prefix='zombie-slop-tests-') as folder:
   if result.returncode!=0 or 'SCRIPT ERROR:' in result.stdout or 'ERROR:' in result.stdout:raise SystemExit('Godot script check failed: '+script)
  subprocess.run([a.godot,'--headless','--path',folder,'--script','res://tests/state_test.gd'],check=True)
 subprocess.run(['python3',str(source/'scripts/check_source.py')],check=True)
+subprocess.run(['python3',str(source/'tests/audio_preflight.py')],check=True)

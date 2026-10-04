@@ -38,6 +38,7 @@ def right_handed(path,repair=False):
     support_direction=(rig.matrix_world.to_3x3()@(rig.pose.bones['Middle1.R'].tail-rig.pose.bones['Middle1.R'].head)).normalized()
     support_correction=support_direction.rotation_difference(Vector((0,-1,.15)).normalized())
     def empty(name):
+        """Create an independent world-space target for the arm solver."""
         obj=bpy.data.objects.new(name,None);bpy.context.collection.objects.link(obj);return obj
     wrist=empty('MainWristTarget')
     primary=rig.pose.bones['LowerArm.L'].constraints.new('IK');primary.target=wrist;primary.chain_count=2;primary.use_stretch=False
@@ -56,10 +57,12 @@ def right_handed(path,repair=False):
     # selected. A cancelled bake must never silently export the author pose.
     bpy.ops.object.mode_set(mode='POSE')
     def bake(end):
+        """Bake selected arm bones and refuse a silently cancelled operation."""
         result=bpy.ops.nla.bake(frame_start=0,frame_end=end,step=1,only_selected=True,visual_keying=True,clear_constraints=False,use_current_action=True,bake_types={'POSE'})
         if result!={'FINISHED'}:raise RuntimeError('Arm pose bake did not finish: '+str(result))
     body_idle=(rig.matrix_world@rig.pose.bones['Body'].head).copy()
     def set_main(frame,clip,end):
+        """Sample the firing wrist, elbow and finger pose for one action frame."""
         phase=frame/max(1,end);lowered=clip.startswith('Lower')
         carry=1.0 if lowered else 0.0
         recoil=0.0
