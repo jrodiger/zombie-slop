@@ -182,9 +182,11 @@ for kind, relative in mapping.items():
     before = hashlib.sha256(original.read_bytes()).hexdigest()
     editable = working / (kind + '.blend')
     rebuilding = a.update_characters and kind.startswith('survivor')
-    if editable.exists() and not a.export_only and not a.resume and not rebuilding:
+    # Character updates also reuse existing non-survivor working sources.
+    reuse = a.resume or a.update_characters
+    if editable.exists() and not a.export_only and not reuse:
         raise SystemExit('Working source already exists: ' + str(editable))
-    if a.export_only or (a.resume and editable.exists() and not rebuilding):
+    if a.export_only or (reuse and editable.exists() and not rebuilding):
         bpy.ops.wm.open_mainfile(filepath=str(editable))
         if a.repair_poses and kind.startswith('survivor'):right_handed(editable, repair=True)
     else:
