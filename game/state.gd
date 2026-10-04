@@ -1,6 +1,9 @@
 extends RefCounted
 const Catalog = preload("res://game/catalog.gd")
-const VERSION = 3
+const VERSION = 4
+var character:String="matt"
+var loot_seed:int=4815
+var vehicles:Dictionary={}
 var inventory:Dictionary = {}
 var objects:Array = []
 var collected:Array = []
@@ -21,6 +24,7 @@ func _init():
 func reset():
  inventory={"wood":0,"scrap":0,"ammo":48,"medkit":2,"rifle_ammo":0,"shells":0,"food":0,"water":0}
  for k in Catalog.FURNITURE: inventory[k]=0
+ loot_seed=randi_range(1,2147483646);vehicles={};character="matt"
  objects=[]; collected=[]; next_id=1; kills=0
  objective={"supplies":false,"collectible":false,"returned":false,"decorated":false,"built":false}
  player_position=[-24.0,0.35,26.0]; health=100.0; weapons={"pistol":12};equipped="pistol"
@@ -93,7 +97,7 @@ func equip(kind:String) -> bool:
  if not weapons.has(kind):return false
  equipped=kind;return true
 func snapshot() -> Dictionary:
- return {"version":VERSION,"inventory":inventory.duplicate(true),"objects":objects.duplicate(true),"collected":collected.duplicate(),"objective":objective.duplicate(),"player_position":player_position.duplicate(),"health":health,"magazine":magazine,"weapons":weapons.duplicate(),"equipped":equipped,"next_id":next_id,"kills":kills,"settings":settings.duplicate()}
+ return {"version":VERSION,"character":character,"loot_seed":loot_seed,"vehicles":vehicles.duplicate(true),"inventory":inventory.duplicate(true),"objects":objects.duplicate(true),"collected":collected.duplicate(),"objective":objective.duplicate(),"player_position":player_position.duplicate(),"health":health,"magazine":magazine,"weapons":weapons.duplicate(),"equipped":equipped,"next_id":next_id,"kills":kills,"settings":settings.duplicate()}
 static func valid_count(value) -> bool:
  return (value is int or value is float) and is_finite(float(value)) and float(value)==floor(float(value)) and value>=0 and value<=100000
 static func valid_position(value) -> bool:
@@ -103,7 +107,14 @@ static func valid_position(value) -> bool:
  return true
 static func validate(data) -> bool:
  if not data is Dictionary:return false
- if data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=VERSION:return false
+ if data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=3 and data.get("version")!=VERSION:return false
+ if data.version>=4:
+  if not Catalog.CHARACTERS.has(data.get("character","")) or not (data.get("loot_seed") is int or data.get("loot_seed") is float) or not is_finite(float(data.loot_seed)) or data.loot_seed!=floor(float(data.loot_seed)) or data.loot_seed<1 or data.loot_seed>2147483646:return false
+  if not data.get("vehicles") is Dictionary or data.vehicles.size()>32:return false
+  for id in data.vehicles:
+   var entry=data.vehicles[id]
+   if not id is String or not entry is Dictionary or not valid_position(entry.get("position")):return false
+   if not (entry.get("yaw") is int or entry.get("yaw") is float) or not is_finite(float(entry.yaw)):return false
  for k in ["inventory","objective","settings"]:
   if not data.get(k) is Dictionary:return false
  if not data.get("objects") is Array or not data.get("collected") is Array:return false
@@ -122,6 +133,7 @@ static func validate(data) -> bool:
  if not (data.get("health") is float or data.get("health") is int) or not is_finite(float(data.health)) or data.health<0 or data.health>100:return false
  for k in Catalog.SUPPLIES+Catalog.FURNITURE:
   if data.version==1 and k in ["rifle_ammo","shells"] and not data.inventory.has(k):continue
+  if data.version<4 and k in ["backpack","campfire"] and not data.inventory.has(k):continue
   if data.version<3 and k in ["food","water"] and not data.inventory.has(k):continue
   if not valid_count(data.inventory.get(k)):return false
  for k in ["supplies","collectible","returned","decorated","built"]:
@@ -152,8 +164,12 @@ static func validate(data) -> bool:
  return true
 func restore(data) -> bool:
  if not validate(data):return false
+ character=data.character if data.version>=4 else "matt";loot_seed=int(data.loot_seed) if data.version>=4 else 4815;vehicles=data.vehicles.duplicate(true) if data.version>=4 else {}
+ for vehicle in vehicles.values():
+  vehicle.yaw=float(vehicle.yaw)
+  for i in range(3):vehicle.position[i]=float(vehicle.position[i])
  inventory=data.inventory.duplicate(true); objects=data.objects.duplicate(true); collected=data.collected.duplicate()
- for key in ["rifle_ammo","shells","food","water"]:inventory[key]=int(inventory.get(key,0))
+ for key in ["rifle_ammo","shells","food","water","backpack","campfire"]:inventory[key]=int(inventory.get(key,0))
  for key in inventory:inventory[key]=int(inventory[key])
  for obj in objects:
   obj.id=int(obj.id);obj.yaw=float(obj.yaw);obj.hp=float(obj.hp)

@@ -1,4 +1,6 @@
 extends Node3D
+const LootTables=preload("res://game/loot_tables.gd")
+const Vehicle=preload("res://game/vehicle.gd")
 const Zombie=preload("res://game/zombie.gd")
 var game
 var navigation:AStarGrid2D
@@ -29,52 +31,66 @@ const HOUSES=[
 ]
 var containers:Array=[]
 var roofs:Array=[]
+var vehicles:Array=[]
 var respawn_left:float=25
 func configure(owner_game):
  game=owner_game;rng.seed=4815
  navigation=AStarGrid2D.new();navigation.region=Rect2i(-126,-126,252,252);navigation.cell_size=Vector2.ONE;navigation.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;navigation.update()
  environment()
- box(Vector3(0,-.3,0),Vector3(248,.6,248),Color("586044"),true)
+ terrain()
  box(Vector3(0,.015,0),Vector3(11,.03,246),Color("343d3c"),false)
  for z in [-17,65]:box(Vector3(0,.018,z),Vector3(246,.035,10),Color("343d3c"),false)
  for x in [-54,54]:box(Vector3(x,.018,0),Vector3(8,.035,190),Color("39413d"),false)
- for z in range(-118,120,8):box(Vector3(0,.04,z),Vector3(.13,.015,2.5),Color("b0aa84"),false)
  for side in [-1,1]:
-  box(Vector3(side*6.6,.09,0),Vector3(1.7,.18,242),Color("959986"),true,false)
-  for z in [-54,-34,7,33,90]:box(Vector3(side*14,.05,z),Vector3(14,.1,3),Color("8a8e7d"),true,false)
+  # Broad bevelled approaches avoid a square curb catching diagonal movement.
+  sidewalk(side)
  for house in HOUSES:interior_house(house.at,house.address,house.home,house.asset)
  for house in HOUSES:
   var street=(8 if house.at.x>0 else -8) if absf(house.at.x)<40 else (54 if house.at.x>0 else -54)
   box(house.at+Vector3(0,.035,-6),Vector3(1.4,.07,4),Color("959986"),true,false)
   box(Vector3((house.at.x+street)/2,.035,house.at.z-8),Vector3(absf(house.at.x-street),.07,1.4),Color("959986"),true,false)
- for side in [-1,1]:
-  for z in [-57,-35,5,33]:
-   for offset in [-7,7]:box(Vector3(side*24+offset,.7,z),Vector3(.12,1.4,12),Color("6b664e"),true)
+ for house in HOUSES:
+  var at=house.at
+  for side in [-1,1]:box(at+Vector3(side*8,.65,-.5),Vector3(.12,1.3,15),Color("6b664e"),true)
+  box(at+Vector3(0,.65,7),Vector3(16,1.3,.12),Color("6b664e"),true)
+  for side in [-1,1]:box(at+Vector3(side*4.9,.65,-8),Vector3(6.2,1.3,.12),Color("6b664e"),true)
+ road_tiles()
+ var pines:Array[Transform3D]=[];var willows:Array[Transform3D]=[];var flowers:Array[Transform3D]=[];var logs:Array[Transform3D]=[];var shrubs:Array[Transform3D]=[]
  var trees:Array[Transform3D]=[];var birches:Array[Transform3D]=[];var dead:Array[Transform3D]=[]
  var bushes:Array[Transform3D]=[];var grasses:Array[Transform3D]=[];var rocks:Array[Transform3D]=[]
- for i in range(350):
-  var x=rng.randf_range(-118,118);var z=rng.randf_range(-118,118);var at=Vector3(x,0,z)
-  if absf(x)<10 or absf(z+17)<8 or absf(z-65)<8 or absf(absf(x)-54)<6 or near_house(at,12):continue
+ for i in range(900):
+  var x=rng.randf_range(-118,118);var z=rng.randf_range(-118,118);var at=Vector3(x,ground_height(x,z),z)
+  if (x>76 and minf(absf(z+75),absf(z-55))<5) or river_distance(x,z)<8 or absf(x)<10 or absf(z+17)<8 or absf(z-65)<8 or absf(absf(x)-54)<6 or near_house(at,12):continue
   var scale=rng.randf_range(.8,1.25);var t=Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*scale),at)
-  if i%7==0:dead.append(t)
+  if i%11==0:willows.append(t)
+  elif i%4==0:pines.append(t)
+  elif i%7==0:dead.append(t)
   elif i%3==0:birches.append(t)
   else:trees.append(t)
   collider(at+Vector3.UP,Vector3(.55,2,.55),true)
- for i in range(1700):
-  var x=rng.randf_range(-120,120);var z=rng.randf_range(-120,120);var at=Vector3(x,.035,z)
-  if near_house(at,7):continue
+ for i in range(3200):
+  var x=rng.randf_range(-120,120);var z=rng.randf_range(-120,120);var at=Vector3(x,ground_height(x,z)+.035,z)
+  if near_house(at,7) or river_distance(x,z)<4 or (x>76 and minf(absf(z+75),absf(z-55))<3):continue
   # Leave a worn strip on active routes; clumps grow along edges and cracks.
   if absf(x)<5.8 or absf(z+17)<4.8 or absf(z-65)<4.8 or absf(absf(x)-54)<4.2:continue
   var scale=rng.randf_range(.7,1.4);var t=Transform3D(Basis(Vector3.UP,rng.randf()*TAU).scaled(Vector3.ONE*scale),at)
-  if i%16==0:rocks.append(t)
+  if i%37==0:logs.append(t)
+  elif i%17==0:flowers.append(t)
+  elif i%9==0:shrubs.append(t)
+  elif i%16==0:rocks.append(t)
   elif i%6==0:bushes.append(t)
   else:grasses.append(t)
+ make_multimesh("tree-pine",pines);make_multimesh("tree-willow",willows);make_multimesh("flowers",flowers);make_multimesh("woodlog",logs);make_multimesh("bush-berries",shrubs)
  make_multimesh("tree",trees);make_multimesh("tree-birch",birches);make_multimesh("tree-dead",dead)
  make_multimesh("bush",bushes);make_multimesh("grass",grasses);make_multimesh("rock",rocks)
- for i in range(9):
-  var at=Vector3(3.2 if i%2 else -3.1,0,-55+i*17 if i<7 else (-101 if i==7 else 107))
-  var kind="wreck" if i%3==0 else "car";var car=prop(kind,at,0,180);car.rotation.y=.15 if i%2 else -.22
-  var body=collider(at+Vector3(0,.775,0),Vector3(2,1.55,4.2),true);body.rotation.y=car.rotation.y
+ var models=["car","car-pickup-armored","car-sports","car-sports-armored","car-truck","car-truck-armored","wreck"]
+ for i in range(models.size()):
+  var car=Vehicle.new();add_child(car);car.configure(game,"parked-"+str(i),models[i],Vector3(3.1 if i%2 else -3.1,.05,-55+i*22),.1 if i%2 else PI);vehicles.append(car)
+ for z in [-75,55]:
+  box(Vector3(river_x(z),.08,z),Vector3(19,.16,3),Color("69563c"),true,false)
+  for side in [-1,1]:box(Vector3(river_x(z),.65,z+side*1.6),Vector3(19,1.1,.12),Color("6b664e"),true)
+ for at in [Vector3(-98,0,48),Vector3(110,0,-58)]:
+  at.y=ground_height(at.x,at.z);prop("tent",at,.5,100);prop("campfire",at+Vector3(2,0,2),0,65);prop("woodlog",at+Vector3(-2,0,2),.2,65)
  for x in [-2,2]:
   for z in [-2,2]:box(Vector3(-48+x,6,-8+z),Vector3(.25,12,.25),Color("5e746b"),true)
  box(Vector3(-48,12.5,-8),Vector3(5.5,3,5.5),Color("778b7b"),true)
@@ -84,7 +100,8 @@ func configure(owner_game):
    prop("hydrant",Vector3(x,0,z),0,65);collider(Vector3(x,.425,z),Vector3(.3,.85,.3),true)
  for at in [Vector3(-4.6,0,-18),Vector3(5,0,-14),Vector3(53,0,65)]:
   prop("road-barrier",at,0,100);collider(at+Vector3.UP*.6,Vector3(2.5,1.2,.48),true)
- for boundary in [[Vector3(-124,3,0),Vector3(1,6,248)],[Vector3(124,3,0),Vector3(1,6,248)],[Vector3(0,3,-124),Vector3(248,6,1)],[Vector3(0,3,124),Vector3(248,6,1)]]:collider(boundary[0],boundary[1],true)
+ # Boundaries extend above the highest new hillside, including the corners.
+ for boundary in [[Vector3(-124,8,0),Vector3(1,16,248)],[Vector3(124,8,0),Vector3(1,16,248)],[Vector3(0,8,-124),Vector3(248,16,1)],[Vector3(0,8,124),Vector3(248,16,1)]]:collider(boundary[0],boundary[1],true)
  build_box_batches();build_regions();seed_loot()
  for i in range(POPULATION):
   var spawn=Vector3(rng.randf_range(-9,12),.2,rng.randf_range(-65,-5))
@@ -113,13 +130,79 @@ func try_respawn() -> bool:
   var cell=Vector2i(roundi(at.x),roundi(at.z))
   if navigation.is_point_solid(cell):continue
   var player_cell=Vector2i(roundi(game.player.global_position.x),roundi(game.player.global_position.z))
-  if regions.get(cell,-1)!=regions.get(player_cell,-2):continue
+  if regions.get(cell,-1)!=regions.get(player_cell,-2) or river_distance(at.x,at.z)<4:continue
+  at.y=ground_height(at.x,at.z)+.2
   var q=PhysicsShapeQueryParameters3D.new();var capsule=CapsuleShape3D.new();capsule.radius=.36;capsule.height=1.75;q.shape=capsule;q.transform=Transform3D(Basis(),at+Vector3.UP*.9);q.collision_mask=7
   if not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():continue
-  spawn_zombie(at,alive.size());return true
+  spawn_zombie(at,rng.randi_range(0,99));return true
  return false
 func prop(kind:String,at:Vector3,yaw:float=0,distance:float=45):
  var model=game.assets.model(kind);add_child(model);model.position=at;model.rotation.y=yaw;visibility_distance(model,distance);return model
+func nearest_vehicle(at:Vector3):
+ var closest=null;var distance=3.4
+ for car in vehicles:
+  var d=at.distance_to(car.global_position)
+  if d>=distance:continue
+  var hit=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(at+Vector3.UP,car.global_position+Vector3.UP,1))
+  if not hit.is_empty() and hit.collider!=car:continue
+  closest=car;distance=d
+ return closest
+static func river_x(z:float) -> float:
+ return 91+sin(z*.035)*4
+static func river_distance(x:float,z:float) -> float:
+ return absf(x-river_x(z))
+static func ground_height(x:float,z:float) -> float:
+ var hill=smoothstep(76,115,absf(x))*(3.5+sin(z*.035)*1.4)+smoothstep(98,122,absf(z))*3.0
+ var bridge=minf(absf(z+75),absf(z-55))
+ # Taper the flattened bridge approaches back into the hillside. A hard
+ # x-boundary would create a cliff at the eastern end of the crossing.
+ if bridge<12 and x>74:
+  var approach=smoothstep(74,80,x)*(1-smoothstep(104,115,x))
+  hill*=lerpf(1,smoothstep(4,12,bridge),approach)
+ if x>70:hill=lerpf(hill,-1.6,1-smoothstep(3,9,river_distance(x,z)))
+ return hill
+func terrain():
+ var mesh=ArrayMesh.new();var vertices=PackedVector3Array();var colors=PackedColorArray();var indices=PackedInt32Array();var n=101
+ for z in range(n):
+  for x in range(n):
+   var px=-125+x*2.5;var pz=-125+z*2.5;var h=ground_height(px,pz);vertices.append(Vector3(px,h,pz));colors.append((Color("675f45") if river_distance(px,pz)<9 else Color("586044")).srgb_to_linear())
+ for z in range(n-1):
+  for x in range(n-1):
+   var a=z*n+x;indices.append_array(PackedInt32Array([a,a+1,a+n,a+1,a+n+1,a+n]))
+ var normals=PackedVector3Array();normals.resize(vertices.size());normals.fill(Vector3.ZERO)
+ for i in range(0,indices.size(),3):
+  var a=indices[i];var b=indices[i+1];var c=indices[i+2];var normal=(vertices[c]-vertices[a]).cross(vertices[b]-vertices[a]).normalized();normals[a]+=normal;normals[b]+=normal;normals[c]+=normal
+ for i in range(normals.size()):normals[i]=normals[i].normalized()
+ var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_NORMAL]=normals;arrays[Mesh.ARRAY_COLOR]=colors;arrays[Mesh.ARRAY_INDEX]=indices;mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+ var material=StandardMaterial3D.new();material.vertex_color_use_as_albedo=true;material.roughness=1
+ var noise=FastNoiseLite.new();noise.seed=4815;noise.frequency=.018
+ var texture=NoiseTexture2D.new();texture.width=256;texture.height=256;texture.seamless=true;texture.noise=noise
+ var gradient=Gradient.new();gradient.set_color(0,Color(.72,.72,.72));gradient.set_color(1,Color.WHITE);texture.color_ramp=gradient
+ material.albedo_texture=texture;material.uv1_triplanar=true;material.uv1_world_triplanar=true;material.uv1_scale=Vector3.ONE*.05
+ mesh.surface_set_material(0,material)
+ var node=MeshInstance3D.new();node.mesh=mesh;add_child(node);var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;node.add_child(body);var shape=CollisionShape3D.new();shape.shape=mesh.create_trimesh_shape();body.add_child(shape)
+ # One narrow winding river with shallow banks and two footbridges.
+ for z in range(-124,124,4):
+  var water=MeshInstance3D.new();var plane=PlaneMesh.new();plane.size=Vector2(6.8,4.2);water.mesh=plane;water.position=Vector3(river_x(z),-.35,z+2);add_child(water)
+  var wet=StandardMaterial3D.new();wet.albedo_color=Color(.15,.31,.33,.82);wet.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;wet.roughness=.25;water.material_override=wet
+func sidewalk(side:int):
+ # A flat walking strip with sloped outer edges, rather than a vertical curb.
+ var mesh=ArrayMesh.new();var points=PackedVector3Array();var indices=PackedInt32Array()
+ for z in [-121,121]:
+  for xy in [Vector2(-1.3,0),Vector2(-.85,.14),Vector2(.85,.14),Vector2(1.3,0)]:points.append(Vector3(xy.x,xy.y,z))
+ for i in range(3):indices.append_array(PackedInt32Array([i,i+1,i+4,i+1,i+5,i+4]))
+ var arrays=[];arrays.resize(Mesh.ARRAY_MAX);arrays[Mesh.ARRAY_VERTEX]=points;arrays[Mesh.ARRAY_INDEX]=indices
+ var normals=PackedVector3Array();normals.resize(8);normals.fill(Vector3.UP);arrays[Mesh.ARRAY_NORMAL]=normals;mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+ var node=MeshInstance3D.new();node.mesh=mesh;node.position=Vector3(side*6.6,0,0);add_child(node)
+ var material=StandardMaterial3D.new();material.albedo_color=Color("959986");material.roughness=1;node.material_override=material
+ var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;node.add_child(body);var shape=CollisionShape3D.new();shape.shape=mesh.create_trimesh_shape();body.add_child(shape)
+func road_tiles():
+ var transforms:Array[Transform3D]=[];var cracked:Array[Transform3D]=[]
+ for z in range(-120,121,8):
+  var t=Transform3D(Basis.IDENTITY.scaled(Vector3(11.0/8,1,1)),Vector3(0,.005,z))
+  if z%24==0:cracked.append(t)
+  else:transforms.append(t)
+ make_multimesh("road-straight",transforms);make_multimesh("road-cracked",cracked)
 func footstep(at:Vector3) -> String:
  for house in HOUSES:
   if absf(at.x-house.at.x)<6 and absf(at.z-house.at.z)<5:return "step-wood"
@@ -152,7 +235,8 @@ func build_box_batches():
  box_batches.clear()
 func collider(at:Vector3,size:Vector3,nav:bool):
  var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;var c=CollisionShape3D.new();var s=BoxShape3D.new();s.size=size;c.shape=s;body.add_child(c);add_child(body);body.position=at
- if nav and at.y+size.y*.5>.6 and at.y-size.y*.5<1.6:
+ var ground=ground_height(at.x,at.z)
+ if nav and at.y+size.y*.5>ground+.6 and at.y-size.y*.5<ground+1.6:
   # Mark grid centers inside the inflated footprint. Rounding outward adds
   # another whole cell and seals otherwise usable two-meter doorways.
   for x in range(ceili(at.x-size.x*.5-.35),floori(at.x+size.x*.5+.35)+1):
@@ -217,24 +301,25 @@ func interior_house(at:Vector3,address:String,safe:bool,asset:String="house"):
  if not safe or furnishing_clear(at+Vector3(3,.16,-.5),Vector3(2.1,.85,.85)):
   prop("couch",at+Vector3(3,.16,-.5),PI);collider(at+Vector3(3,.58,-.5),Vector3(2.1,.85,.85),true)
  if not safe:
-  prop("bed",at+Vector3(-3,.16,3));collider(at+Vector3(-3,.5,3),Vector3(1.5,.68,2.1),true)
+  var bedroom_x=-3.0 if address.hash()%2==0 else 3.0
+  prop("bed",at+Vector3(bedroom_x,.16,3.7),PI);collider(at+Vector3(bedroom_x,.5,3.7),Vector3(1.5,.68,2.1),true)
+  prop("table",at+Vector3(3,.16,-2));collider(at+Vector3(3,.55,-2),Vector3(1.8,.78,1),true)
+  for side in [-1,1]:
+   prop("chair",at+Vector3(3+side*1.4,.16,-2),-side*PI/2);collider(at+Vector3(3+side*1.4,.6,-2),Vector3(.6,.85,.6),true)
   prop("stove",at+Vector3(-1.45,.16,-3.8));collider(at+Vector3(-1.45,.66,-3.8),Vector3(.7,1,.6),true)
  else:
   prop("table",at+Vector3(-3,.16,2.5));collider(at+Vector3(-3,.96,2.5),Vector3(1.8,.1,1),false)
   prop("shelf",at+Vector3(3,.16,3.5))
   for y in [.1,.65,1.2,1.75]:collider(at+Vector3(3,.16+y,3.5),Vector3(1.5,.09,.5),false)
  var key=address.to_lower().replace(" ","-")
- var fridge_stock=[{"id":key+"-food","kind":"food","amount":2},{"id":key+"-water","kind":"water","amount":2}]
- var drawer_stock=[{"id":key+"-scrap","kind":"scrap","amount":4},{"id":key+"-ammo","kind":"ammo","amount":12}]
- var safe_stock=[{"id":key+"-medkit","kind":"medkit","amount":1},{"id":key+"-rifle-ammo","kind":"rifle_ammo","amount":24}]
- if safe:drawer_stock=[{"id":"porch-wood","kind":"wood","amount":12},{"id":"porch-scrap","kind":"scrap","amount":4}]
- if address=="8 Cedar Lane":safe_stock=[{"id":"rifle-supply","kind":"rifle","amount":1},{"id":"rifle-rounds","kind":"rifle_ammo","amount":90},{"id":"supply-house-3","kind":"medkit","amount":2}]
- if address=="12 Cedar Lane":safe_stock=[{"id":"shotgun-porch","kind":"shotgun","amount":1},{"id":"shotgun-shells","kind":"shells","amount":18}]
- add_container(key+"-fridge","Refrigerator",address,"fridge",at+Vector3(-4.5,.16,-3.5),Vector3(.8,1.8,.7),fridge_stock)
- add_container(key+"-drawer","Kitchen drawers",address,"drawer",at+Vector3(4,.16,-3.8),Vector3(1.2,.86,.55),drawer_stock)
+ var fridge_stock=LootTables.stock(game.state.loot_seed,address,"fridge")
+ var drawer_stock=LootTables.stock(game.state.loot_seed,address,"drawer")
+ var safe_stock=LootTables.stock(game.state.loot_seed,address,"safe")
+ add_container(key+"-fridge","Refrigerator",address,"fridge",at+Vector3(-4.5,.16,-3.5),Vector3(.8,1.8,.7),fridge_stock,PI)
+ add_container(key+"-drawer","Kitchen drawers",address,"drawer",at+Vector3(4,.16,-3.8),Vector3(1.2,.86,.55),drawer_stock,PI)
  add_container(key+"-safe","Bedroom safe",address,"safe",at+Vector3(4.7,.16,3.5),Vector3(.7,.8,.65),safe_stock)
  for offset in [Vector3(-7,0,-4),Vector3(7,0,-4)]:prop("trashcan",at+offset,0,60)
- prop("trashbag",at+Vector3(7.6,0,-4.3),0,50);prop("grill",at+Vector3(4,0,7),0,55)
+ prop("trashbag",at+Vector3(7.6,0,-4.3),0,50);prop("grill",at+Vector3(4,0,6.3),0,55)
 func near_house(at:Vector3,radius:float) -> bool:
  for house in HOUSES:
   if at.distance_to(house.at)<radius:return true
@@ -247,10 +332,10 @@ func furnishing_clear(at:Vector3,size:Vector3) -> bool:
   var bounds=Transform3D(Basis(Vector3.UP,float(record.yaw)),position)*AABB(Vector3(-dimensions.x/2,0,-dimensions.z/2),dimensions)
   if candidate.intersects(bounds):return false
  return true
-func add_container(ident:String,title:String,address:String,kind:String,at:Vector3,size:Vector3,stock:Array):
+func add_container(ident:String,title:String,address:String,kind:String,at:Vector3,size:Vector3,stock:Array,yaw:float=0):
  # Existing home arrangements take priority over newly introduced fixtures.
  if address=="14 Cedar Lane" and not furnishing_clear(at,size):return
- var visual=prop(kind,at,0,40);var body=collider(at+Vector3.UP*size.y*.5,size,true)
+ var visual=prop(kind,at,yaw,40);var body=collider(at+Vector3.UP*size.y*.5,size,true)
  var door=visual.find_child("ContainerDoorPivot",true,false)
  containers.append({"id":ident,"title":title,"address":address,"kind":kind,"node":visual,"body":body,"stock":stock,"searched":false,"door":door,"rest":door.position if door!=null else Vector3.ZERO})
 func container_items(entry:Dictionary) -> Array:
@@ -274,7 +359,7 @@ func search_container(entry:Dictionary):
   var tween=create_tween()
   entry.tween=tween
   if entry.kind=="drawer":tween.tween_property(door,"position:z",entry.rest.z-.20,.25)
-  else:tween.tween_property(door,"rotation:y",-.7,.25)
+  else:tween.tween_property(door,"rotation:y",1.15,.25)
  game.sound("search",.45)
 func close_containers():
  for entry in containers:
@@ -287,17 +372,20 @@ func model_bounds(node:Node3D) -> AABB:
   if child is MeshInstance3D:result=result.merge(child.transform*child.get_aabb())
   elif child is Node3D:result=result.merge(child.transform*model_bounds(child))
  return result
-func add_loot(ident:String,kind:String,at:Vector3,amount:int=1):
+func add_loot(ident:String,kind:String,at:Vector3,amount:int=1,yaw:float=0):
  if ident in game.state.collected:return
- var root=prop(kind,at,0,40)
+ var root=prop(kind,at,yaw,40)
  loot.append({"id":ident,"kind":kind,"amount":amount,"node":root})
 func seed_loot():
  add_loot("fern","plant",Vector3(-12,.1,13))
  add_loot("radio","radio",Vector3(21.5,1.155,3.2))
  add_loot("chair","chair",Vector3(-26,.16,5))
- add_loot("table","table",Vector3(28,.16,10))
- add_loot("guitar","guitar",Vector3(27,.2,-34))
- add_loot("shelf","shelf",Vector3(21,.16,-34))
+ var bed_x=-3.0 if "11 Cedar Lane".hash()%2==0 else 3.0
+ add_loot("table","table",Vector3(25-bed_x,.16,10.4))
+ add_loot("guitar","guitar",Vector3(23.5,.16,-31.3),1,PI)
+ add_loot("shelf","shelf",Vector3(20.6,.16,-32.6))
+ add_loot("camp-pack","backpack",Vector3(-96,ground_height(-96,50),50))
+ add_loot("camp-fire","campfire",Vector3(-98,ground_height(-98,51),51))
 func nearest_loot(at:Vector3):
  var best=null;var distance=2.2
  for item in loot:
@@ -318,7 +406,7 @@ func route(from:Vector3,to:Vector3) -> PackedVector3Array:
  # Wait for a reachable target instead of repeating that work for every zombie.
  if navigation.is_point_solid(last):return result
  if regions.get(first,-1)!=regions.get(last,-2):return result
- for point in navigation.get_point_path(first,last,false):result.append(Vector3(point.x,.2,point.y))
+ for point in navigation.get_point_path(first,last,false):result.append(Vector3(point.x,ground_height(point.x,point.y)+.2,point.y))
  return result
 func alert_zombies(at:Vector3,radius:float):
  for zombie in get_tree().get_nodes_in_group("zombies"):

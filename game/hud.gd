@@ -30,10 +30,10 @@ func configure(owner_game):
  var disabled=style.duplicate();disabled.bg_color=Color("1a2520");disabled.border_color=Color("36443a");theme.set_stylebox("disabled","Button",disabled);theme.set_color("font_disabled_color","Button",Color("778778"))
  theme.set_color("font_color","Label",CREAM);theme.set_color("font_color","Button",CREAM);root.theme=theme
  hud=Control.new();hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);hud.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(hud)
- var top=PanelContainer.new();top.position=Vector2(28,24);top.size=Vector2(370,116);top.add_theme_stylebox_override("panel",panel_style());hud.add_child(top)
+ var top=PanelContainer.new();top.position=Vector2(28,24);top.size=Vector2(330,80);top.add_theme_stylebox_override("panel",panel_style());hud.add_child(top)
  var v=VBoxContainer.new();v.add_theme_constant_override("separation",8);top.add_child(v)
- v.add_child(text("ZOMBIE SLOP  /  CEDAR END",16,GOLD))
- status=text("",17);v.add_child(status)
+
+ status=text("",17);status.visible=false;v.add_child(status)
  objective=text("",18);objective.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;v.add_child(objective)
  compass=text("",16,GOLD);compass.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT);compass.position=Vector2(-300,32);compass.size=Vector2(270,30);compass.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(compass)
  var bottom=PanelContainer.new();bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT);bottom.position=Vector2(28,-125);bottom.size=Vector2(340,94);bottom.add_theme_stylebox_override("panel",panel_style());hud.add_child(bottom)
@@ -43,7 +43,7 @@ func configure(owner_game):
  prompt=text("",19,CREAM);prompt.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);prompt.position=Vector2(-350,-95);prompt.size=Vector2(700,40);prompt.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(prompt)
  message=text("",20,GOLD);message.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);message.position=Vector2(-350,164);message.size=Vector2(700,60);message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;message.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(message)
  placement=text("",18);placement.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT);placement.position=Vector2(-460,-175);placement.size=Vector2(430,145);placement.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(placement)
- var controls=text("B Build  ·  E Interact  ·  V Guns  ·  H Heal  ·  F5 Save  ·  Esc Pause",15,Color("d3d3bd"));controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);controls.position=Vector2(-360,-30);controls.size=Vector2(720,25);controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(controls)
+ var controls=text("Tab Inventory  ·  B Build  ·  E Interact  ·  V Weapons  ·  H Heal  ·  Esc Pause",15,Color("d3d3bd"));controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);controls.position=Vector2(-360,-30);controls.size=Vector2(720,25);controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(controls)
  performance=text("",14);performance.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT);performance.position=Vector2(-350,64);performance.size=Vector2(320,60);performance.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(performance)
  reticle=text("·",32,CREAM);reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-20,-20);reticle.size=Vector2(40,40);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(reticle)
  damage=ColorRect.new();damage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);damage.color=Color(.65,.14,.08,0);damage.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(damage)
@@ -57,11 +57,13 @@ func panel_style() -> StyleBoxFlat:
  var s=StyleBoxFlat.new();s.bg_color=Color(.045,.075,.06,.94);s.border_color=Color("52644e");s.set_border_width_all(1);s.set_corner_radius_all(8);s.content_margin_left=22;s.content_margin_right=22;s.content_margin_top=18;s.content_margin_bottom=18;return s
 func _process(delta):
  if game==null:return
- hud.visible=game.running
+ hud.visible=game.running and not game.overlay
  notice_left=maxf(0,notice_left-delta);message.visible=notice_left>0
  if not game.running:return
  health.value=game.state.health;stamina.value=game.player.sprint_energy
  ammo.text="%s  %02d / %03d   ·   HEALTH %d"%[game.player.profile().name,game.state.magazine,int(game.state.inventory[game.player.profile().ammo]),game.state.health]
+ if game.player.profile().get("melee",false):ammo.text="%s   ·   HEALTH %d"%[game.player.profile().name,game.state.health]
+ if game.player.driving!=null:ammo.text="DRIVING  ·  %d km/h"%roundi(absf(game.player.driving.speed)*3.6)
  if game.player.reload_left>0:ammo.text="RELOADING…  %.1fs"%game.player.reload_left
  status.text="DAY 01   ·   WOOD %d   SCRAP %d   MED %d"%[game.state.inventory.wood,game.state.inventory.scrap,game.state.inventory.medkit]
  objective.text=game.objective_text()
@@ -80,29 +82,37 @@ func toast(value:String):
 func clear_panel():
  if is_instance_valid(panel):panel.queue_free()
  panel=null
-func open_panel(title:String,subtitle:String="") -> VBoxContainer:
- clear_panel();game.overlay=true;Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
- panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=Vector2(-300,-320);panel.size=Vector2(600,640);panel.add_theme_stylebox_override("panel",panel_style());root.add_child(panel)
+func open_panel(title:String,subtitle:String="",wide:bool=false) -> VBoxContainer:
+ game.inventory_open=false
+ clear_panel();game.overlay=true;hud.visible=false;Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
+ panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=Vector2(-460 if wide else -300,-320);panel.size=Vector2(920 if wide else 600,640);panel.add_theme_stylebox_override("panel",panel_style());root.add_child(panel)
  panel_content=VBoxContainer.new();panel_content.add_theme_constant_override("separation",10);panel.add_child(panel_content)
  panel_content.add_child(text(title,31,GOLD))
  if subtitle!="":var label=text(subtitle,16);label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;panel_content.add_child(label)
  return panel_content
 func button(value:String,callback:Callable,parent:Node=null) -> Button:
  var b=Button.new();b.text=value;b.alignment=HORIZONTAL_ALIGNMENT_LEFT;b.pressed.connect(func():game.sound("ui",.25);callback.call());(parent if parent!=null else panel_content).add_child(b);return b
+func survivor_selector(parent:Node):
+ var row=HBoxContainer.new();parent.add_child(row);row.add_child(text("SURVIVOR",16,GOLD))
+ var select=OptionButton.new();row.add_child(select);select.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+ var keys=game.catalog.CHARACTERS.keys()
+ for kind in keys:select.add_item(game.catalog.CHARACTERS[kind])
+ select.select(keys.find(game.state.character));select.item_selected.connect(func(index):game.change_character(keys[index]);select.select(keys.find(game.state.character)))
 func start_screen():
  open_panel("ZOMBIE SLOP","CEDAR END  /  AN OFFLINE SURVIVAL SANDBOX")
  panel_content.add_child(text("The street is quiet. The houses are not.\nFind something worth bringing home.",21))
  panel_content.add_child(text("Explore · Scavenge · Furnish · Fortify",18,GOLD))
+ survivor_selector(panel_content)
  button("NEW NEIGHBORHOOD",game.new_game).grab_focus()
  var continue_button=button("CONTINUE SAVED GAME",game.load_game);continue_button.disabled=not FileAccess.file_exists(game.save_path) and not FileAccess.file_exists(game.save_path+".bak")
  button("SETTINGS",settings)
  button("QUIT",game.quit_game)
- var help=text("WASD / left stick  move   ·   Mouse / right stick  look\nRMB / LT  aim   ·   LMB / RT  fire   ·   R / X  reload\nE / A  collect   ·   B / Y  build & furnish\nShift / L3  sprint   ·   H / D-pad up  heal\n1–3  select gun   ·   V / D-pad left  cycle guns",16);panel_content.add_child(help)
+ var help=text("WASD / left stick  move   ·   Mouse / right stick  look\nRMB / LT  aim   ·   LMB / RT  fire   ·   R / X  reload\nE / A  collect   ·   B / Y  build & furnish\nShift / L3  sprint   ·   H / D-pad up  heal\nTab / Back  inventory   ·   V / D-pad left  cycle weapons",16);panel_content.add_child(help)
 func pause():
  open_panel("TAKE A BREATH","Game paused. Essential progress is saved locally.")
  button("RESUME",game.close_overlay).grab_focus()
  button("SAVE GAME",game.save_game)
- button("BACKPACK",backpack)
+ button("INVENTORY  ·  TAB",backpack)
  button("BUILD / DECORATE",build_menu)
  button("SETTINGS",settings)
  button("RETURN HOME IF STUCK",func():game.recover_player();game.close_overlay())
@@ -145,15 +155,25 @@ func loot_menu(entry:Dictionary):
  var close=button("CLOSE",game.close_overlay)
  (close if first==null else first).grab_focus()
 func backpack():
- open_panel("BACKPACK","Health %d / 100  ·  Supplies can help you recover."%game.state.health)
- for kind in ["medkit","food","water"]:
-  var recovery=45 if kind=="medkit" else (15 if kind=="food" else 8)
-  var b=button("%s  ×%d   ·   Use / +%d health"%[kind.capitalize(),game.state.inventory[kind],recovery],func():game.player.use_supply(kind);backpack())
-  b.disabled=game.state.inventory[kind]<=0 or game.state.health>=100
- panel_content.add_child(text("WEAPONS",16,GOLD))
- for kind in game.state.weapons:
-  button(game.catalog.WEAPONS[kind].name+("  ·  Equipped" if kind==game.state.equipped else "  ·  Equip"),func():game.player.equip(kind);backpack())
- button("BACK",pause).grab_focus()
+ if not game.running:return
+ open_panel("INVENTORY","Health %d / 100  ·  Tab closes your pack"%game.state.health,true);game.inventory_open=true
+ survivor_selector(panel_content)
+ var columns=HBoxContainer.new();columns.add_theme_constant_override("separation",24);columns.size_flags_vertical=Control.SIZE_EXPAND_FILL;panel_content.add_child(columns)
+ for section in ["EQUIPMENT & SUPPLIES","FURNISHINGS & MATERIALS"]:
+  var scroll=ScrollContainer.new();scroll.custom_minimum_size=Vector2(410,400);scroll.size_flags_horizontal=Control.SIZE_EXPAND_FILL;columns.add_child(scroll)
+  var list=VBoxContainer.new();list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",8);scroll.add_child(list);list.add_child(text(section,16,GOLD))
+  if section=="EQUIPMENT & SUPPLIES":
+   for kind in game.state.weapons:
+    var entry=game.catalog.WEAPONS[kind];var rounds="" if entry.get("melee",false) else "  ·  %d / %d"%[game.state.weapons[kind],game.state.inventory[entry.ammo]]
+    button(entry.name+rounds+("  ✓" if kind==game.state.equipped else "  Equip"),func():game.player.equip(kind);backpack(),list)
+   for kind in ["medkit","food","water"]:
+    var b=button("%s  ×%d  ·  Use"%[kind.capitalize(),game.state.inventory[kind]],func():game.player.use_supply(kind);backpack(),list);b.disabled=game.state.inventory[kind]<=0 or game.state.health>=100
+   for kind in ["ammo","rifle_ammo","shells"]:list.add_child(text("%s   ×%d"%[kind.replace("_"," ").capitalize(),game.state.inventory[kind]],17))
+  else:
+   for kind in ["wood","scrap"]:list.add_child(text("%s   ×%d"%[kind.capitalize(),game.state.inventory[kind]],20))
+   for kind in game.catalog.FURNITURE:
+    var b=button("%s  ×%d   ·   Place"%[game.catalog.ITEMS[kind].name,game.state.inventory[kind]],func():game.begin_placement(kind),list);b.disabled=game.state.inventory[kind]<=0
+ var row=HBoxContainer.new();panel_content.add_child(row);button("BUILD / DECORATE",build_menu,row);button("CLOSE  ·  TAB",game.close_overlay,row).grab_focus()
 func storage_menu(ident:int):
  var record=game.state.find_object(ident)
  if record.is_empty():return
@@ -172,5 +192,6 @@ func storage_menu(ident:int):
 func death():
  open_panel("THE STREET GOT YOU","Your last manual/autosave checkpoint is preserved. Restart the neighborhood or continue from that checkpoint.")
  button("LOAD LAST SAVE",game.load_game).grab_focus()
+ survivor_selector(panel_content)
  button("NEW NEIGHBORHOOD",game.new_game)
  button("QUIT",game.quit_game)

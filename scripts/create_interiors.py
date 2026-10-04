@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import bpy
+from mathutils import Matrix
 
 p = argparse.ArgumentParser()
 p.add_argument('--assets', type=Path, required=True)
@@ -64,11 +65,14 @@ def consolidate(container=False):
             pivot.location = (-.375, .37, 0)
         elif container == 'safe':
             pivot.location = (-.29, .34, 0)
+        bpy.context.view_layer.update()
         front = [o for o in bpy.context.scene.objects if o.type == 'MESH' and any(s in o.name for s in ['Drawer front', 'Drawer handle', 'Door', 'Handle', 'Safe door', 'Cylinder'])]
         for obj in front:
             world = obj.matrix_world.copy()
             obj.parent = pivot
-            obj.matrix_world = world
+            obj.matrix_parent_inverse = Matrix.Identity(4)
+            obj.matrix_basis = pivot.matrix_world.inverted() @ world
+        bpy.context.view_layer.update()
     for parent in [None] + ([pivot] if container else []):
         meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and o.parent == parent and o.name != 'Roof']
         bpy.ops.object.select_all(action='DESELECT')
@@ -134,8 +138,8 @@ def house(color):
     for x in [-3.4, 3.4]:
         box('Room partition', (x, 1, 1.6), (5.2, .16, 3.2), paint)
     # Roof remains a distinct object; the game can hide it when indoors.
-    vertices = [(-6.5, -5.5, 3.3), (6.5, -5.5, 3.3), (0, -5.5, 4.8),
-                (-6.5, 5.5, 3.3), (6.5, 5.5, 3.3), (0, 5.5, 4.8)]
+    vertices = [(-6.5, -5.5, 3.18), (6.5, -5.5, 3.18), (0, -5.5, 4.8),
+                (-6.5, 5.5, 3.18), (6.5, 5.5, 3.18), (0, 5.5, 4.8)]
     mesh = bpy.data.meshes.new('Pitched roof')
     mesh.from_pydata([(x, -y, z) for x, y, z in vertices], [],
                      [(3, 5, 2, 0), (5, 4, 1, 2), (2, 1, 0), (4, 5, 3)])

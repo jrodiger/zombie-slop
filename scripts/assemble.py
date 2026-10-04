@@ -25,14 +25,20 @@ def main():
  exports=home/'generated'
  report=exports/'quaternius-exports.json'
  if not report.is_file():raise SystemExit('Missing Quaternius exports. Run scripts/adapt_quaternius.py --export-only as documented in docs/SETUP.md.')
- recorded=json.loads(report.read_text()).get('exports',{})
- for name in ['survivor','zombie','pistol','rifle','shotgun','car','storage']:
+ pack_report=json.loads(report.read_text());recorded=pack_report.get('exports',{})
+ required_pack={'survivor','survivor-lis','survivor-sam','survivor-shaun','zombie','zombie-chubby','zombie-arm','zombie-ribcage','pistol','rifle','shotgun','storage','car','car-pickup-armored','car-sports','car-sports-armored','car-truck','car-truck-armored','road-straight','road-cracked','road-cross','road-turn'}
+ if not required_pack.issubset(pack_report.get('files',{})) or not required_pack.issubset(recorded):raise SystemExit('Quaternius export manifest is incomplete for this game version. Restore the matching private checkpoint and re-export as documented in docs/SETUP.md.')
+ for name in pack_report['files']:
   editable=private/'quaternius'/(name+'.blend');output=exports/(name+'.glb');entry=recorded.get(name,{})
   if not editable.is_file() or not output.is_file() or hashlib.sha256(editable.read_bytes()).hexdigest()!=entry.get('source_sha256') or hashlib.sha256(output.read_bytes()).hexdigest()!=entry.get('glb_sha256'):
    raise SystemExit('Missing/stale Quaternius export: '+name+'. Re-export the matching private checkpoint with scripts/adapt_quaternius.py --export-only.')
+  shutil.copy2(output,assets/output.name)
  neighborhood=exports/'neighborhood-exports.json'
  if not neighborhood.is_file():raise SystemExit('Missing neighborhood exports. Run scripts/prepare_neighborhood_assets.py --export-only.')
- for name,entry in json.loads(neighborhood.read_text())['exports'].items():
+ neighborhood_report=json.loads(neighborhood.read_text())['exports']
+ required_neighborhood={'backpack','bandages','bed','bottle','bush','bush-berries','campfire','couch','counter','drawer','flowers','fridge','gascan','grass','grill','guitar','house','house-blue','house-ochre','house-red','hydrant','medkit','radio','road-barrier','road-sign','rock','safe','stove','tent','trashbag','trashcan','tree','tree-birch','tree-dead','tree-pine','tree-willow','woodlog','wreck'}
+ if not required_neighborhood.issubset(neighborhood_report):raise SystemExit('Neighborhood export manifest is incomplete for this game version. Restore the matching private checkpoint and re-export as documented in docs/SETUP.md.')
+ for name,entry in neighborhood_report.items():
   editable=private/entry['source'];output=exports/(name+'.glb')
   if not editable.is_file() or not output.is_file() or hashlib.sha256(editable.read_bytes()).hexdigest()!=entry['source_sha256'] or hashlib.sha256(output.read_bytes()).hexdigest()!=entry['glb_sha256']:raise SystemExit('Stale neighborhood export: '+name)
   shutil.copy2(output,assets/output.name)
@@ -69,5 +75,6 @@ def main():
  asset=subprocess.check_output(['git','-C',str(private),'rev-parse','HEAD'],text=True).strip()
  (runtime/'assembly.json').write_text(json.dumps({'code_commit':code,'asset_commit':asset},indent=2)+'\n')
  (home/'builds').mkdir(exist_ok=True)
+ for platform in ['linux','windows']:(home/'builds/cross-platform'/platform).mkdir(parents=True,exist_ok=True)
  print('Assembled:',runtime)
 if __name__=='__main__':main()
