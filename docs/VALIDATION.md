@@ -1,4 +1,26 @@
-# Current validation — iteration six
+# Current validation — focused carry-arm correction (0.6.1)
+
+This update changes lowered firearm poses only. The previous carry check accepted a low wrist while missing a backward-folded elbow. A new exported native regression reproduces full-body front/side views with ordinary non-aiming input, then captures close views, actual aim/release transitions and walking/running phases.
+
+The shipped version-four poses fail the bilateral shape check in all 24 survivor/firearm combinations: shoulder/elbow/wrist asymmetry is about 29 cm and arm-segment alignment is about 0.12. The final version-six poses pass all 24, with a maximum body-relative mirrored-joint error below 0.9 mm and relaxed segment alignment above 0.91. Six real aim/release transitions and 48 walking/running phase checks pass. Measurements wait for skeleton/BoneAttachment transforms to finish updating; front/side and representative gait captures were inspected directly.
+
+Lowered idle mirrors the free arm's authored shoulder, elbow and wrist rather than solving competing IK targets. Moving carry restrains the counter-phase shoulder swing and retains the relaxed forearm. Coherent palm tilt keeps every barrel down and clear of the ground without folding the elbow. A full-frame Blender check of Shaun's six idle/walk/run carry clips confirms downward barrels and complete mesh clearance. The four survivor checkpoints preserve identical non-carry action curves, geometry and rest-bone fingerprints. Aim, fire, reload, author leg curves, world layout and gameplay code are unchanged.
+
+The final native Metal export at 1280×800 passes **976 gameplay checks**, including bilateral arm shape, relaxed elbows, carry/aim direction, grips, support hands and moving reloads. Six further fresh-process save/relaunch checks pass. Required source checks pass, including 106 state/save checks. Carry-only repair is byte-preserving on all four already repaired sources and rejects an incompatible disposable checkpoint without changing it. Sources are backed up before edits, and the matching final private LFS upload and remote-pointer verification are recorded in ASSETS.json.
+
+All checks use isolated progress. macOS was locked when desktop control attempted the extra interactive check; native viewport captures and engine-dispatched aim/release tests remained available. No additional human desktop or physical-controller coverage is claimed. No new performance result is inferred from the historical ten-minute report below; this focused change preserves game logic and mesh complexity. Linux/Windows runtime and Steam Deck remain unverified.
+
+To reproduce the carry inspection after external setup, with `ZOMBIE_HOME` set to the external ZombieSlop folder:
+
+```sh
+ZOMBIE_REPORT_DIR="$ZOMBIE_HOME/verification/carry" \
+  "$ZOMBIE_HOME/builds/Zombie Slop.app/Contents/MacOS/Zombie Slop" \
+  --resolution 1280x800 -- --inspection --carry-only
+```
+
+The inspection returns failure if a lowered arm folds backward, loses bilateral idle shape, raises its muzzle during travel, clips the ground, or fails to return from aiming. PNG captures and `carry.json` remain outside public Git.
+
+# Prior iteration-six validation
 
 Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal at 1280×800. Normal play retains a 60 FPS cap, VSync and shadows off. Steam Deck and physical controllers remain unverified.
 

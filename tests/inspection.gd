@@ -44,9 +44,88 @@ func poses():
     game.player.motion.legs.play(gait,0);game.player.motion.legs.seek(time,true);game.player.motion.legs.pause()
     game.player.animation.play(game.player.weapon_clip("Reload" if reload else "Lower"+gait),0);game.player.animation.seek(.8 if reload else time,true);game.player.animation.pause()
     await shot("gait-"+gait+("-reload" if reload else "")+"-"+str(time),game.player.position+Vector3(-2,1.0,.2),game.player.position+Vector3(0,.65,0),false)
+func carry_views():
+ # Match the user's full-body front/side views, then inspect the same silhouette
+ # closer up using normal simulation, then press/release the real aim action.
+ var cases=[];var transitions=[];var gaits=[];var failures=0
+ for character in ["shaun","matt","lis","sam"]:
+  game.change_character(character)
+  for kind in ["pistol","revolver","rifle","shotgun","smg","compact_shotgun"]:
+   game.state.weapons[kind]=0;game.player.equip(kind)
+   game.player.position=Vector3(0,.04,100);game.player.visual.rotation.y=0
+   Input.action_release("aim");game.player.set_physics_process(true)
+   await get_tree().create_timer(.4).timeout
+   var playing_clip=game.player.animation.current_animation
+   game.player.set_physics_process(false);game.player.motion.legs.pause();game.player.animation.pause()
+   var skeleton=game.assets.skeleton(game.player.visual)
+   var inverse=skeleton.get_bone_global_pose(skeleton.find_bone("Body")).affine_inverse()
+   var error=0.0
+   for joint in ["UpperArm","LowerArm","Middle1"]:
+    var dominant=inverse*skeleton.get_bone_global_pose(skeleton.find_bone(joint+".L")).origin
+    var free=inverse*skeleton.get_bone_global_pose(skeleton.find_bone(joint+".R")).origin
+    error=maxf(error,dominant.distance_to(Vector3(-free.x,free.y,free.z)))
+   var shoulder=skeleton.get_bone_global_pose(skeleton.find_bone("UpperArm.L")).origin
+   var elbow=skeleton.get_bone_global_pose(skeleton.find_bone("LowerArm.L")).origin
+   var wrist=skeleton.get_bone_global_pose(skeleton.find_bone("Middle1.L")).origin
+   var alignment=(elbow-shoulder).normalized().dot((wrist-elbow).normalized())
+   var passed=error<.012 and alignment>.85 and playing_clip==game.player.weapon_clip("LowerIdle")
+   if not passed:failures+=1
+   cases.append({"character":character,"weapon":kind,"clip":playing_clip,"symmetry_error":error,"arm_alignment":alignment,"passed":passed})
+   print("CARRY ",character," ",kind," clip=",playing_clip," symmetry=",error," alignment=",alignment," passed=",passed)
+   for view in [{"name":"front","offset":Vector3(0,1.1,2.4)},{"name":"side","offset":Vector3(-2.4,1.1,0)}]:
+    await shot(character+"-"+kind+"-"+view.name,game.player.position+view.offset,game.player.position+Vector3.UP*.8,false)
+   if character=="shaun" and kind=="pistol":
+    await shot("carry-front",game.player.position+Vector3(0,1.7,6),game.player.position+Vector3.UP*.8,false)
+    await shot("carry-side",game.player.position+Vector3(-6,2,0),game.player.position+Vector3.UP*.8,false)
+ game.change_character("shaun")
+ for kind in ["pistol","revolver","rifle","shotgun","smg","compact_shotgun"]:
+  game.player.equip(kind);game.player.set_physics_process(true);Input.action_press("aim")
+  await get_tree().create_timer(.4).timeout
+  var model=game.player.model_name(kind)
+  var grip=game.player.visual.find_child(model+"Grip",true,false)
+  var muzzle=game.player.visual.find_child(model+"Muzzle",true,false)
+  var aimed=game.player.animation.current_animation==game.player.weapon_clip("Aim") and (muzzle.global_position-grip.global_position).normalized().dot(game.player.visual.global_basis.z.normalized())>.95
+  game.player.set_physics_process(false);game.player.motion.legs.pause();game.player.animation.pause()
+  await shot(kind+"-aim",game.player.position+Vector3(-2,1.2,1.6),game.player.position+Vector3.UP*.8,false)
+  game.player.set_physics_process(true);Input.action_release("aim")
+  await get_tree().create_timer(.4).timeout
+  var skeleton=game.assets.skeleton(game.player.visual)
+  var shoulder=skeleton.get_bone_global_pose(skeleton.find_bone("UpperArm.L")).origin
+  var elbow=skeleton.get_bone_global_pose(skeleton.find_bone("LowerArm.L")).origin
+  var wrist=skeleton.get_bone_global_pose(skeleton.find_bone("Middle1.L")).origin
+  var returned=game.player.animation.current_animation==game.player.weapon_clip("LowerIdle") and (elbow-shoulder).normalized().dot((wrist-elbow).normalized())>.85
+  transitions.append({"weapon":kind,"aimed":aimed,"returned_to_relaxed_carry":returned})
+  if not aimed or not returned:failures+=1
+  game.player.set_physics_process(false);game.player.motion.legs.pause();game.player.animation.pause()
+  await shot(kind+"-released",game.player.position+Vector3(-2.4,1.1,0),game.player.position+Vector3.UP*.8,false)
+ for kind in ["pistol","revolver","rifle","shotgun","smg","compact_shotgun"]:
+  game.player.equip(kind)
+  var model=game.player.model_name(kind)
+  var grip=game.player.visual.find_child(model+"Grip",true,false)
+  var muzzle=game.player.visual.find_child(model+"Muzzle",true,false)
+  var skeleton=game.assets.skeleton(game.player.visual)
+  for gait in ["Walk","Run"]:
+   for time in [.05,.2,.35,.5]:
+    game.player.motion.legs.play(gait,0);game.player.motion.legs.seek(time,true);game.player.motion.legs.pause()
+    game.player.animation.play(game.player.weapon_clip("Lower"+gait),0);game.player.animation.seek(time,true);game.player.animation.pause()
+    # BoneAttachment3D updates grip/muzzle transforms after skeleton evaluation.
+    await RenderingServer.frame_post_draw
+    var shoulder=skeleton.get_bone_global_pose(skeleton.find_bone("UpperArm.L")).origin
+    var elbow=skeleton.get_bone_global_pose(skeleton.find_bone("LowerArm.L")).origin
+    var wrist=skeleton.get_bone_global_pose(skeleton.find_bone("Middle1.L")).origin
+    var relaxed=(elbow-shoulder).normalized().dot((wrist-elbow).normalized())>.85
+    var downward=muzzle.global_position.y<grip.global_position.y-.15
+    var clear=muzzle.global_position.y>game.player.global_position.y+.025
+    gaits.append({"weapon":kind,"gait":gait,"time":time,"relaxed":relaxed,"muzzle_down":downward,"clear":clear})
+    if not relaxed or not downward or not clear:failures+=1
+    await shot(kind+"-"+gait+"-"+str(time),game.player.position+Vector3(-2.4,1.1,0),game.player.position+Vector3.UP*.8,false)
+ var f=FileAccess.open(game.report_dir()+"/carry.json",FileAccess.WRITE)
+ f.store_string(JSON.stringify({"cases":cases,"transitions":transitions,"gaits":gaits,"failures":failures,"graphical":DisplayServer.get_name()!="headless"},"  "))
+ return 1 if failures else 0
 func run(owner_game):
  game=owner_game;game.new_game();game.player.set_process(false)
  for enemy in get_tree().get_nodes_in_group("zombies"):enemy.set_physics_process(false)
+ if "--carry-only" in OS.get_cmdline_user_args():return await carry_views()
  if not "--environment-only" in OS.get_cmdline_user_args() and not "--rooms-only" in OS.get_cmdline_user_args():await poses()
  if "--poses-only" in OS.get_cmdline_user_args():return 0
  var addresses=[] if "--environment-only" in OS.get_cmdline_user_args() else ["12 Cedar Lane","8 Cedar Lane","11 Cedar Lane","CEDAR AUTO & FUEL","CEDAR MARKET","ORCHARD MART","1 Meadow Farm"]

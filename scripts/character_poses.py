@@ -1,18 +1,81 @@
 """Bake coherent whole-hand grips, carry, recoil and reload actions on author rigs."""
 import math
 import bpy
-from mathutils import Quaternion, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 GUNS=('Rifle','Shotgun','CompactShotgun','SMG','Revolver','Pistol')
 ROOTS=('Middle1','Index1','Thumb1','Pinky1')
 SCALES={'Rifle':.58,'Shotgun':.72,'SMG':.60,'Pistol':.45,'Revolver':.8,'CompactShotgun':.70}
 
-def right_handed(path,repair=False):
+def relaxed_carry(rig):
+    """Mirror the free arm's authored shape instead of solving lowered-arm IK."""
+    names=('UpperArm','LowerArm',*ROOTS)
+    rig.animation_data.action=bpy.data.actions['Idle'];bpy.context.scene.frame_set(1)
+    bpy.context.view_layer.update()
+    idle=[rig.pose.bones[name+'.R'].rotation_quaternion.copy() for name in names]
+    for gun in GUNS:
+        for clip,original in [('LowerIdle','Idle'),('LowerWalk','Walk'),('LowerRun','Run')]:
+            source=bpy.data.actions[original]
+            end=max(1,int(source.frame_range[1]))
+            samples=[]
+            # Idle is bilateral; locomotion swings the arms in opposite phases.
+            for frame in range(end+1):
+                rig.animation_data.action=source
+                sample=frame if clip=='LowerIdle' else (frame+end/2)%end
+                bpy.context.scene.frame_set(int(sample),subframe=sample%1)
+                bpy.context.view_layer.update()
+                rotations=[rig.pose.bones[name+'.R'].rotation_quaternion.copy() for name in names]
+                if clip!='LowerIdle':
+                    # Carrying a weapon restrains the shoulder swing. Retain the
+                    # relaxed forearm/palm instead of swinging a gun upward.
+                    rotations=[base.slerp(q,.25 if index==0 else 0.0)
+                               for index,(base,q) in enumerate(zip(idle,rotations))]
+                samples.append(rotations)
+            action=bpy.data.actions[clip+'_'+gun]
+            for curve in list(action.fcurves):
+                if any(curve.data_path.startswith('pose.bones["'+name+'.L"]') for name in names):
+                    action.fcurves.remove(curve)
+            rig.animation_data.action=action
+            for frame,rotations in enumerate(samples):
+                bpy.context.scene.frame_set(frame)
+                for name,q in zip(names,rotations):
+                    bone=rig.pose.bones[name+'.L']
+                    bone.location=Vector();bone.scale=Vector((1,1,1))
+                    bone.rotation_quaternion=Quaternion((q.w,q.x,-q.y,-q.z))
+                bpy.context.view_layer.update()
+                # A small coherent palm tilt clears a long muzzle without moving
+                # the shoulder, elbow or wrist away from the natural arm shape.
+                grip=bpy.data.objects[gun+'Grip'];muzzle=bpy.data.objects[gun+'Muzzle']
+                barrel=muzzle.matrix_world.translation-grip.matrix_world.translation
+                axis=(rig.matrix_world.inverted().to_3x3()@barrel).normalized()
+                drop=min(.70,.20/barrel.length)
+                if abs(axis.z+drop)>.00001:
+                    horizontal=Vector((axis.x,axis.y,0)).normalized()
+                    direction=horizontal*math.sqrt(1-drop*drop)+Vector((0,0,-drop))
+                    tilt=axis.rotation_difference(direction)
+                    matrices={name:rig.pose.bones[name+'.L'].matrix.copy() for name in ROOTS}
+                    for name,matrix in matrices.items():
+                        rig.pose.bones[name+'.L'].matrix=Matrix.LocRotScale(matrix.translation,tilt@matrix.to_quaternion(),matrix.to_scale())
+                for name in names:
+                    bone=rig.pose.bones[name+'.L']
+                    for channel in ('location','rotation_quaternion','scale'):
+                        bone.keyframe_insert(data_path=channel,frame=frame)
+    rig.animation_data.action=bpy.data.actions['Idle_Gun'];bpy.context.scene.frame_set(1)
+    rig['zombie_slop_two_hand_pose_version']=6
+
+def right_handed(path,repair=False,carry_only=False):
     """Retain author rigs; fit weapons once and bake independently sampled hands."""
     bpy.ops.wm.open_mainfile(filepath=str(path))
     if bpy.context.object and bpy.context.object.mode!='OBJECT':bpy.ops.object.mode_set(mode='OBJECT')
     rig=bpy.data.objects['CharacterArmature']
-    if rig.get('zombie_slop_two_hand_pose_version')==4 and not repair:return path
+    version=rig.get('zombie_slop_two_hand_pose_version',0)
+    if carry_only and version not in (4,5,6):
+        raise RuntimeError('Carry-only repair requires a version 4, 5 or 6 survivor checkpoint; restore the matching source before retrying.')
+    if version==6 and not repair:return path
+    if version in (4,5) and not repair:
+        relaxed_carry(rig)
+        bpy.context.preferences.filepaths.save_version=2
+        bpy.ops.wm.save_as_mainfile(filepath=str(path));return path
     old=bpy.data.objects.get('RightHandedRig')
     if old:
         old.scale.x=1;bpy.context.view_layer.update()
@@ -150,10 +213,10 @@ def right_handed(path,repair=False):
     for obj in [wrist,elbow,*orientations]:
         animation=obj.animation_data.action if obj.animation_data else None;bpy.data.objects.remove(obj,do_unlink=True)
         if animation:bpy.data.actions.remove(animation)
-    rig.animation_data.action=bpy.data.actions['Idle_Gun'];bpy.context.scene.frame_set(1)
+    relaxed_carry(rig)
     bpy.ops.object.mode_set(mode='OBJECT')
     mirror=empty('RightHandedRig')
     for obj in list(bpy.context.scene.objects):
         if obj!=mirror and obj.parent is None:obj.parent=mirror
-    mirror.scale.x=-1;rig['zombie_slop_handedness']='right';rig['zombie_slop_two_hand_pose_version']=4
+    mirror.scale.x=-1;rig['zombie_slop_handedness']='right'
     bpy.context.preferences.filepaths.save_version=2;bpy.ops.wm.save_as_mainfile(filepath=str(path));return path
