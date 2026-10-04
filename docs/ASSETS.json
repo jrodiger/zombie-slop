@@ -3,8 +3,8 @@
   "blender": "4.5.14 LTS",
   "private_repository": "https://github.com/jrodiger/zombie-slop-assets",
   "private_visibility_verified": true,
-  "asset_commit": "4875792785eec80fbebfe4b0309875da98c20ae7",
-  "private_push": "Private visibility and remote identity reverified before upload. Locally inspected/graphically tested sources committed as 4875792; GitHub acknowledged all 33 changed/new LFS objects (288,722,050 source bytes, displayed 289 MB). Remote main matches the full commit; git lfs fsck passes and a remotely committed survivor pointer was verified. Existing checkpoints, pristine downloads and Blender backups remain preserved. Account billing usage could not be read with the existing token scope; no billing settings or paid-overage authorization were changed.",
+  "asset_commit": "0a8ad8b8603eb79375c2a4e3e0486120fe8e9174",
+  "private_push": "Private visibility and repository identity reverified immediately before upload. GitHub acknowledged all 32 changed/new LFS objects (278,219,280 source bytes, displayed 278 MB). Remote main matches 0a8ad8b8603eb79375c2a4e3e0486120fe8e9174; local git lfs fsck passed and the remotely committed Shaun LFS pointer was verified. Existing checkpoints, pristine inputs and Blender backups remain preserved. Account billing usage returned HTTP 404 because the existing token lacks user scope; no billing settings or paid-overage authorization were changed.",
   "packs": [
     {
       "name": "Kenney City Kit (Suburban)",
@@ -65,9 +65,10 @@
         "Zombie_Atlas.png",
         "Environment/Blends/Couch.blend",
         "Environment/Blends/FireHydrant.blend",
-        "Environment/Blends/TrashBag_1.blend"
+        "Environment/Blends/TrashBag_1.blend",
+        "Environment/Blends/Chest_Special.blend"
       ],
-      "treatment": "Twenty-two private editable working sources. All four survivors mirror the original rig/clips for right-handed use, retaining author bone names and nine weapon attachments. Each has 54 baked firearm actions: six guns with idle/walk/run, aim/fire/reload and lowered idle/walk/run. Four long guns use independently sampled support-hand IK, avoiding dependency cycles; reload releases that hand. Original melee Slash/Stab clips and sockets are retained. No cross-rig retargeting. Four zombie variants retain their own rigs/clips; Attack aliases Punch or the ribcage HitReact. All six vehicles are normalized and used; street straight/cracked tiles render as atlas MultiMeshes, with cross/turn tiles prepared for future layouts. Source/GLB hashes are checked during export and assembly. Re-export with adapt_quaternius.py --export-only without changing editable sources."
+      "treatment": "Twenty-two private editable sources. Four author rigs keep their original clips/bone names, mirrored for right-handed use. Pose version 3 fits gun geometry around its sockets once, rotates all three finger roots together to preserve coherent palms, and bakes independent support-arm targets within reach, carry/aim/recoil and receiver reload gestures (54 actions per survivor). Six firearms and author melee clips remain on the same rig; no cross-rig retargeting. All six vehicle sources remain available: only three unarmored types spawn, and collected parts select their matching armored derivatives. Four road tiles are preserved but no longer rendered; one custom asphalt shader/mesh supplies matching road collision. Source/GLB hashes remain verified on export/assembly."
     },
     {
       "name": "Quaternius Survival Pack",
@@ -103,9 +104,11 @@
         "Blends/Shotgun_SawedOff.blend",
         "Blends/Backpack.blend",
         "Blends/Bonfire.blend",
-        "Blends/Tent.blend"
+        "Blends/Tent.blend",
+        "Blends/Raft.blend",
+        "Blends/Raft_Paddle.blend"
       ],
-      "treatment": "Private normalized props with retained materials. Revolver and compact shotgun geometry were inspected and fitted onto each author survivor pistol socket, with their own muzzle/grip and same-rig poses. Radio, backpack and campfire are collectible furnishings; tent/campfire/logs form wooded camps. Backpack/campfire are decorative. Medical/gascan derivatives remain prepared rather than loose supply pickups."
+      "treatment": "Private material-preserving props; fitted revolver and compact shotgun use author survivor sockets. Radio, backpack and campfire are recoverable furnishings. Two camps have tent/fire/log scenery. Raft and oars are uniformly fitted to 3.8m and 1.65m maximum lengths, preserving proportions, and decorate the riverbank. Backpack, campfire and raft do not add capacity/cooking/boating mechanics."
     },
     {
       "name": "Quaternius Ultimate Nature Pack",
@@ -137,7 +140,7 @@
         "Blends/WoodLog_Moss.blend",
         "Blends/BushBerries_1.blend"
       ],
-      "treatment": "Private dimensioned working sources with retained materials, rendered in eleven vegetation/rock MultiMesh sets. Denser forest includes pine/willow, flowers, mossy logs and berry bushes, with routes and bridge clearances preserved. Pristine source hashes are checked during adaptation."
+      "treatment": "Eleven batched vegetation/rock sets retain materials. Mossy logs preserve the author proportions (approximately .897m wide, .688m tall, 2.670m long); random instances scale uniformly. Denser woods leave explicit house-yard/path, campsite, riverbank and bridge clearances. Pristine inputs remain untouched."
     },
     {
       "name": "ITHappy Apocalypse Free",
@@ -160,7 +163,7 @@
         "https://ithappystudios.com/one-time-purchase-licence-agreement/"
       ],
       "license_evidence": "Full official policy/agreement text preserved with the pristine download and private neighborhood/licenses. Internal working copies/backup only; final-game derivatives remain local, with no public standalone assets.",
-      "treatment": "Selected mesh transforms retained on detach, fitted to physical dimensions and saved privately. Packed Color2 atlas connected to a rough portable PBR material; original complex dirt/blood mixing is simplified. No ITHappy characters are used. No generative-image tool receives these assets."
+      "treatment": "Selected mesh transforms retained on detach, fitted to physical dimensions and saved privately. Packed Color2 atlas connected to a rough portable PBR material; original complex dirt/blood mixing is simplified. No ITHappy characters are used. No generative-image tool receives these assets. The damaged car is static, collidable scenery rather than a drivable vehicle. Signs_Shield remains prepared but is not rendered; simple mounted original street signs replace its inconsistent poster appearance."
     },
     {
       "name": "Recorded CC0 sound effects",
@@ -218,10 +221,10 @@
   "original_assets": {
     "author": "Zombie Slop project / Jonathan Rodiger",
     "license": "All rights reserved; separate from MIT code",
-    "editable_sources": "Original 21 sources remain checkpointed. Private neighborhood/ contains nine original house/interior sources and 29 adapted props. Four bungalow palettes have pitched roofs/eaves overlapping the 3.2m wall top, windows, porches and partitions. Cabinet parenting uses a correct parent-inverse transform so safe/fridge doors stay connected to physical hinges. Editable pivots remain separate for runtime opening.",
+    "editable_sources": "The original 21 sources and nine neighborhood house/interior sources remain preserved. Private district/ adds six dimensioned editable buildings and sixteen furnishings/supply props. A shared authored plan defines doors, window openings, floors, upstairs stair openings, partitions and model collision; cottages, townhouses, farmhouses, gas/auto shop, grocery and convenience store use distinct layouts. The original home footprint preserves base coordinates and adds a street entrance/roof underside. Safe/fridge pivots remain attached to their editable hinges.",
     "generator": "scripts/create_assets.py",
     "export": "Blender background explicit Y-up GLB, action export, mesh joining for runtime surfaces; swinging DoorPivot stays separate. Outputs regenerated to external generated/ folder. Generator refuses existing editable sources unless --replace-existing is explicit; --only zombie permits a focused checkpoint repair. Existing private sources are reproducibly exported without saving changes by scripts/export_assets.py; every source hash is checked.",
-    "audio": "Quiet original 24-second filtered-noise wind, seed 4815. Previous original synthetic effects remain reproducible from the first checkpoint but recorded CC0 effects replace them in runtime.",
+    "audio": "Quiet original 24-second filtered-noise wind, seed 4815. Previous original synthetic effects remain reproducible from the first checkpoint but recorded CC0 effects replace them in runtime. An original deterministic eight-second combustion-engine loop (22050Hz mono, seed1045) varies pitch/gain in game. Harmonic phase is periodic and the noise component wraps to avoid a seam click; JSON parameters/hash and WAV are private.",
     "files": [
       "survivor",
       "zombie",
@@ -245,7 +248,8 @@
       "pistol",
       "crate"
     ],
-    "limitations": "Original temporary characters and environment sources remain preserved for restoration. Runtime uses pack characters, guns and vegetation plus original accessible homes/construction. ITHappy complex dirt/blood shader mixing is simplified for glTF portability. Prepared small medical/supply props are not all rendered."
+    "limitations": "Low-poly prototype; firearms use baked same-rig actions and broad hand contact rather than runtime individual-finger IK or detachable magazines. Armor is cosmetic; vehicles have no seated animation/fuel/damage. Raft, backpack and campfire mechanics remain decorative. ITHappy complex shader mixing remains simplified. No extra pack download was required.",
+    "district_generator": "scripts/create_district.py; private building-plans.json must agree with game/building_plans.json. Export-only reads sources without saving; --update-buildings deliberately regenerates only buildings and retains Blender backups."
   },
   "public_asset_files": []
 }

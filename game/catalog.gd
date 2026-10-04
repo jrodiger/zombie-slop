@@ -19,7 +19,7 @@ const ITEMS = {
 const CHARACTERS={"matt":"Matt","lis":"Lis","sam":"Sam","shaun":"Shaun"}
 const FURNITURE = ["plant","radio","guitar","chair","table","shelf","backpack","campfire"]
 const BUILD = ["foundation","wall","door","barricade","roof","storage"]
-const SUPPLIES = ["wood","scrap","ammo","medkit","rifle_ammo","shells","food","water"]
+const SUPPLIES = ["wood","scrap","ammo","medkit","rifle_ammo","shells","food","water","vehicle_parts"]
 const WEAPONS = {
  "axe":{"name":"Fire axe","model":"Axe","melee":true,"capacity":0,"ammo":"ammo","reload":0.0,"interval":.75,"damage":65,"range":2.15,"pellets":0,"spread":0.0,"recoil":.01},
  "bat":{"name":"Barbed bat","model":"WoodenBat_Barbed","melee":true,"capacity":0,"ammo":"ammo","reload":0.0,"interval":.6,"damage":42,"range":2.25,"pellets":0,"spread":0.0,"recoil":.008},

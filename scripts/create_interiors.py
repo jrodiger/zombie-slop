@@ -10,6 +10,7 @@ from mathutils import Matrix
 p = argparse.ArgumentParser()
 p.add_argument('--assets', type=Path, required=True)
 p.add_argument('--replace-existing', action='store_true')
+p.add_argument('--only',nargs='+',default=[],choices=['house','house-red','house-blue','house-ochre','drawer','fridge','safe','bed','counter'])
 a = p.parse_args(sys.argv[sys.argv.index('--') + 1:])
 private = a.assets.expanduser().resolve()
 public = Path(__file__).resolve().parents[1]
@@ -84,25 +85,28 @@ def consolidate(container=False):
                 bpy.ops.object.join()
 
 
-def window_wall(axis, fixed, lo, hi, windows, paint, trim, glass):
+def window_wall(axis, fixed, lo, hi, windows, paint, trim, glass, door=None):
     """Build actual window openings with a sill, lintel, posts and thin glazing."""
     def part(center, level, width, height, depth, mat):
         at = (fixed, center, level) if axis == 'x' else (center, fixed, level)
         size = (depth, width, height) if axis == 'x' else (width, depth, height)
         box('Wall', at, size, mat)
-    part((lo + hi) / 2, .575, hi - lo, .95, .2, paint)
+    if door is None:part((lo + hi) / 2, .575, hi - lo, .95, .2, paint)
+    else:
+        for start,end in [(lo,door-.8),(door+.8,hi)]:part((start+end)/2,.575,end-start,.95,.2,paint)
     part((lo + hi) / 2, 2.85, hi - lo, .7, .2, paint)
     last = lo
     for center in windows:
         left, right = center - .8, center + .8
         if left > last:
             part((last + left) / 2, 1.775, left - last, 1.45, .2, paint)
-        part(center, 1.02, 1.85, .10, .3, trim)
+        if center!=door:part(center, 1.02, 1.85, .10, .3, trim)
         part(center, 2.53, 1.85, .10, .3, trim)
         for x in [left, right]:
             part(x, 1.775, .10, 1.5, .3, trim)
-        part(center, 1.775, 1.5, 1.38, .025, glass)
-        part(center, 1.775, .06, 1.4, .1, trim)
+        if center!=door:
+            part(center, 1.775, 1.5, 1.38, .025, glass)
+            part(center, 1.775, .06, 1.4, .1, trim)
         last = right
     if last < hi:
         part((last + hi) / 2, 1.775, hi - last, 1.45, .2, paint)
@@ -126,7 +130,8 @@ def house(color):
     glass = material('Dusty window glass', (.30, .46, .49), .28)
     box('Floor', (0, 0, .08), (12, 10, .16), floor)
     for x in [-6, 6]:
-        window_wall('x', x, -5, 5, [-2.5, 2.5], paint, trim, glass)
+        window_wall('x', x, -5, 5, [-2.5, 2.5], paint, trim, glass, -2.5 if x==6 else None)
+    box('Street entry porch',(7,-2.5,.06),(2,2.4,.12),floor)
     window_wall('y', 5, -6, 6, [-3.5, 3.5], paint, trim, glass)
     window_wall('y', -5, -6, -1.3, [-4], paint, trim, glass)
     window_wall('y', -5, 1.3, 6, [4], paint, trim, glass)
@@ -142,7 +147,7 @@ def house(color):
                 (-6.5, 5.5, 3.18), (6.5, 5.5, 3.18), (0, 5.5, 4.8)]
     mesh = bpy.data.meshes.new('Pitched roof')
     mesh.from_pydata([(x, -y, z) for x, y, z in vertices], [],
-                     [(3, 5, 2, 0), (5, 4, 1, 2), (2, 1, 0), (4, 5, 3)])
+                     [(3, 5, 2, 0), (5, 4, 1, 2), (2, 1, 0), (4, 5, 3), (0, 1, 4, 3)])
     mesh.materials.append(roof)
     obj = bpy.data.objects.new('Roof', mesh)
     bpy.context.collection.objects.link(obj)
@@ -160,6 +165,7 @@ def house(color):
 
 for name, color in [('house', (.48, .56, .45)), ('house-red', (.59, .40, .34)),
                      ('house-blue', (.42, .53, .58)), ('house-ochre', (.67, .58, .42))]:
+    if a.only and name not in a.only:continue
     target = working / (name + '.blend')
     if target.exists() and not a.replace_existing:
         raise SystemExit('Existing source protected: ' + str(target))
@@ -171,6 +177,7 @@ for name, color in [('house', (.48, .56, .45)), ('house-red', (.59, .40, .34)),
     bpy.ops.wm.save_as_mainfile(filepath=str(target))
 
 for name in ['drawer', 'fridge', 'safe', 'bed', 'counter']:
+    if a.only and name not in a.only:continue
     target = working / (name + '.blend')
     if target.exists() and not a.replace_existing:
         raise SystemExit('Existing source protected: ' + str(target))

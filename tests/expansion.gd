@@ -22,22 +22,22 @@ func run(owner_game,test_suite):
    hill_trees+=1
    if game.world.navigation.is_point_solid(Vector2i(roundi(node.position.x),roundi(node.position.z))):blocked_hill_trees+=1
  check(hill_trees>0 and blocked_hill_trees==hill_trees,"All hillside tree trunks block the navigation grid at their actual ground height")
- game.player.set_physics_process(true);game.player.position=Vector3(-95,game.world.ground_height(-95,-17)+.2,-17);game.player.velocity=Vector3.ZERO;game.player.yaw=PI/2;game.player.reset_physics_interpolation();await wait(.2)
+ game.player.set_physics_process(true);game.player.position=Vector3(-95,game.world.ground_height(-95,-35)+.2,-35);game.player.velocity=Vector3.ZERO;game.player.yaw=PI/2;game.player.reset_physics_interpolation();await wait(.2)
  Input.action_press("forward");await wait(1.9);Input.action_release("forward")
- check(game.player.position.x< -101 and absf(game.player.position.y-game.world.ground_height(game.player.position.x,-17))<.2,"Actual walking climbs the sloped outskirts without jumping or falling through terrain")
+ check(game.player.position.x< -101 and absf(game.player.position.y-game.world.ground_height(game.player.position.x,-35))<.2,"Actual walking climbs the sloped outskirts without jumping or falling through terrain")
  game.player.position=Vector3(84,game.world.ground_height(84,55)+.2,55);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;game.player.reset_physics_interpolation();await wait(.2)
  Input.action_press("forward");await wait(5.7);Input.action_release("forward");game.player.set_physics_process(false)
  check(game.player.position.x>106 and game.player.position.y>-.2,"Actual walking crosses the river bridge and both approaches without jumping")
- game.player.set_physics_process(true);game.player.position=Vector3(122.7,game.world.ground_height(122.7,-121)+.2,-121);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;game.player.reset_physics_interpolation();await wait(.2)
+ game.player.set_physics_process(true);game.player.position=Vector3(162.7,game.world.ground_height(162.7,-161)+.2,-161);game.player.velocity=Vector3.ZERO;game.player.yaw=-PI/2;game.player.reset_physics_interpolation();await wait(.2)
  Input.action_press("forward");await wait(.6);Input.action_release("forward");game.player.set_physics_process(false)
- check(game.player.position.x<123.25 and game.player.position.y>6,"High corner terrain remains contained by the map boundary")
+ check(game.player.position.x<163.25 and game.player.position.y>6,"High corner terrain remains contained by the map boundary")
  for entry in game.world.containers:
   if entry.kind not in ["safe","fridge"]:continue
   var door=entry.door;var mesh=door.get_child(0) as MeshInstance3D;var faces=mesh.mesh.get_faces();var nearest=100.0
   for point in faces:
    var world=mesh.global_transform*point;nearest=minf(nearest,Vector2(world.x-door.global_position.x,world.z-door.global_position.z).length())
   check(nearest<.045,entry.address+" "+entry.kind+" exported front is attached to its hinge")
- for roof in game.world.roofs:check(roof.node.get_aabb().position.y<=3.2,"Imported roof eave meets the wall top: "+str(roof.at))
+ for roof in game.world.roofs:check(roof.node.get_aabb().position.y<=float(roof.get("height",3.2)),"Imported roof eave meets the wall top: "+str(roof.at))
  var stocks=[]
  for entry in game.world.containers:
   if entry.kind=="fridge":stocks.append(JSON.stringify(entry.stock.map(func(item):return [item.kind,item.amount])))
@@ -119,7 +119,7 @@ func run(owner_game,test_suite):
  for vehicle in game.world.vehicles:
   check(game.world.model_bounds(vehicle.visual).size.distance_to(vehicle.get_child(0).shape.size)<.12,"Vehicle collider fits the actual imported model: "+vehicle.kind)
   game.player.position=vehicle.position+vehicle.global_basis*Vector3(-2.6,.05,0);vehicle.enter(game.player)
-  check(vehicle.driver==game.player and vehicle.exit_driver(),"Every vehicle model including the wreck supports entry and safe exit: "+vehicle.kind)
+  check(vehicle.driver==game.player and vehicle.exit_driver(),"Every intact vehicle model supports entry and safe exit: "+vehicle.kind)
  game.change_character("matt");game.player.equip("pistol")
  # River beds are below the old flat-map recovery threshold. Valid supported
  # river positions must reload there; old flat-map saves below new hills recover.

@@ -66,7 +66,7 @@ Use the sibling asset checkout; verify its remote identity and **private visibil
 
    Blender autosave is enabled in the generation process at two minutes and saved backup versions are set to two. For interactive work enable the same settings in Blender Preferences → Save & Load. Preserve the `.blend` files with editable rigs/actions/materials. The generator exports GLB explicitly with Y-up, eight animation actions, no texture dependencies for original models, and joins meshes for fewer draw calls. The swinging door keeps its pivot separate. Original deterministic audio is synthesized with seed 7; editable parameters are in the generator and private `recipe.json`.
 
-The iteration-four checkpoint extends private `neighborhood/` working sources and `neighborhood/audio/`. Preserve the complete user-downloaded Nature and Survival archives, their extracted `Blends/` trees and CC0 licenses under `downloads/nature/` and `downloads/survival/`. Preserve the complete ITHappy `Apocalypse_Free.blend` and official license evidence under `downloads/ithappy/`. Its textures are packed; no FBX/GLB download is required. Only props are adapted, never ITHappy characters.
+The iteration-five checkpoint extends private `neighborhood/` working sources and `neighborhood/audio/`. Preserve the complete user-downloaded Nature and Survival archives, their extracted `Blends/` trees and CC0 licenses under `downloads/nature/` and `downloads/survival/`. Preserve the complete ITHappy `Apocalypse_Free.blend` and official license evidence under `downloads/ithappy/`. Its textures are packed; no FBX/GLB download is required. Only props are adapted, never ITHappy characters.
 
 Re-export the matching private checkpoint after the original and Quaternius exports:
 
@@ -79,7 +79,19 @@ Re-export the matching private checkpoint after the original and Quaternius expo
   --home "$HOME/Documents/ZombieSlop" --assets ../zombie-slop-assets --export-only
 ```
 
-Neighborhood exports are checked against editable-source and GLB hashes. Audio exports are copied from hash-verified private derivatives, so re-export does not change the working checkpoint. Creating new copies uses `prepare_neighborhood_assets.py` without `--export-only`; it refuses existing files unless `--resume` is specified. The neighborhood script’s `--repair-poses` compatibility option affects Matt only; use the Quaternius adapter’s `--resume --repair-poses` for all four survivors. After creation or pose repair, run `adapt_quaternius.py --export-only` again: it is the sole owner of the survivor export/manifest. Neighborhood export-only never exports or changes characters. `create_interiors.py` creates nine original house/furniture sources, refusing existing sources unless `--replace-existing` is explicit. `prepare_audio.py` creates a new private audio checkpoint from the downloaded CC0 recordings; Ogg decoding uses Blender’s audio library. These are normal Blender transformations, not image-generation inputs.
+Neighborhood exports are checked against editable-source and GLB hashes. Audio exports are copied from hash-verified private derivatives, so re-export does not change the working checkpoint. Creating new copies uses `prepare_neighborhood_assets.py` without `--export-only`; it refuses existing files unless `--resume` is specified. The neighborhood script’s `--repair-poses` compatibility option affects all four survivors; use the Quaternius adapter’s `--resume --repair-poses` for all four survivors. After creation or pose repair, run `adapt_quaternius.py --export-only` again: it is the sole owner of the survivor export/manifest. Neighborhood export-only never exports or changes characters. `create_interiors.py` creates nine original house/furniture sources, refusing existing sources unless `--replace-existing` is explicit. `prepare_audio.py` creates a new private audio checkpoint from the downloaded CC0 recordings; Ogg decoding uses Blender’s audio library. These are normal Blender transformations, not image-generation inputs.
+
+The private `district/` checkpoint adds six original building sources and sixteen original furnishings/supply models. The public `game/building_plans.json` and private recipe must agree; meshes and gameplay collision consume the same dimensions. Re-export the matching checkpoint and original engine loop before assembly:
+
+```sh
+"$HOME/Documents/ZombieSlop/tools/Blender.app/Contents/MacOS/Blender" \
+  --background --python scripts/create_district.py -- \
+  --assets ../zombie-slop-assets --home "$HOME/Documents/ZombieSlop" --export-only
+python3 scripts/create_vehicle_audio.py --assets ../zombie-slop-assets \
+  --home "$HOME/Documents/ZombieSlop" --export-only
+```
+
+Creation refuses existing district sources. `--update-buildings` explicitly rebuilds only the six original buildings from changed plans and keeps Blender backups; props stay preserved. Neighborhood `--resume --update-props NAME...` deliberately rebuilds named adapted props and keeps backups. Export-only modes do not save editable sources. Original engine regeneration requires `--replace-existing`; preserve an external backup before using it. The mossy log retains uniform author proportions. The new raft, paddle and special chest derive from the existing downloaded packs. The engine loop is deterministic original audio, with a private parameter/hash recipe.
 
 6. Assemble and launch:
 
