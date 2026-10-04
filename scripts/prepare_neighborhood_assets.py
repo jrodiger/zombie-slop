@@ -7,6 +7,8 @@ import sys
 from pathlib import Path
 
 import bpy
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from character_poses import right_handed
 from mathutils import Matrix, Vector
 
 p = argparse.ArgumentParser()
@@ -55,111 +57,6 @@ def save(name):
     bpy.ops.wm.save_as_mainfile(filepath=str(path))
     return path
 
-
-def right_handed():
-    """Bake two-hand long-gun actions and mirror the authored rig's handedness."""
-    path = private / 'quaternius/survivor.blend'
-    bpy.ops.wm.open_mainfile(filepath=str(path))
-    rig = bpy.data.objects['CharacterArmature']
-    if rig.get('zombie_slop_handedness') == 'right' and not a.repair_poses:
-        return path
-    # Retain the original clips and detach the previous handedness transform.
-    old_mirror = bpy.data.objects.get('RightHandedRig')
-    if old_mirror:
-        old_mirror.scale.x = 1
-        bpy.context.view_layer.update()
-        for child in list(old_mirror.children):
-            world = child.matrix_world.copy()
-            child.parent = None
-            child.matrix_world = world
-        bpy.data.objects.remove(old_mirror, do_unlink=True)
-    for gun in ('Rifle', 'Shotgun'):
-        old_fore = bpy.data.objects.get(gun + 'ForeGrip')
-        if old_fore:
-            bpy.data.objects.remove(old_fore, do_unlink=True)
-    for action in list(bpy.data.actions):
-        if action.name.endswith(('_Rifle', '_Shotgun')):
-            bpy.data.actions.remove(action)
-    rig.animation_data.action = bpy.data.actions['Idle_Gun']
-    bpy.context.scene.frame_set(1)
-    bpy.context.view_layer.update()
-    main = bpy.data.objects.new('LongGunWristTarget', None)
-    bpy.context.collection.objects.link(main)
-    main.location = rig.matrix_world @ (Vector((.10, -.04, 1.08)) / 1.15)
-    orientation = bpy.data.objects.new('LongGunHandOrientation', None)
-    bpy.context.collection.objects.link(orientation)
-    finger = rig.pose.bones['Middle1.L']
-    barrel = bpy.data.objects['RifleMuzzle'].matrix_world.translation - bpy.data.objects['RifleGrip'].matrix_world.translation
-    correction = barrel.normalized().rotation_difference(Vector((0, -1, 0)))
-    orientation.rotation_mode = 'QUATERNION'
-    orientation.rotation_quaternion = correction @ (rig.matrix_world @ finger.matrix).to_quaternion()
-    primary = rig.pose.bones['LowerArm.L'].constraints.new('IK')
-    primary.target = main
-    primary.chain_count = 2
-    primary.use_stretch = False
-    hand = finger.constraints.new('COPY_ROTATION')
-    hand.target = orientation
-    hand.owner_space = 'WORLD'
-    hand.target_space = 'WORLD'
-    bpy.ops.object.select_all(action='DESELECT')
-    rig.select_set(True)
-    bpy.context.view_layer.objects.active = rig
-    for gun in ('Rifle', 'Shotgun'):
-        weapon = bpy.data.objects[gun]
-        fore = bpy.data.objects.new(gun + 'ForeGrip', None)
-        bpy.context.collection.objects.link(fore)
-        fore.parent = weapon
-        fore.location = bpy.data.objects[gun + 'Grip'].location.lerp(bpy.data.objects[gun + 'Muzzle'].location, .32)
-        for clip, original in [('Idle', 'Idle_Gun'), ('Walk', 'Walk_Gun'), ('Run', 'Run_Gun'),
-                               ('Aim', 'Aim'), ('Shoot', 'Shoot'), ('Reload', 'Reload')]:
-            action = bpy.data.actions[original].copy()
-            action.name = clip + '_' + gun
-            action.use_fake_user = True
-            rig.animation_data.action = action
-            primary.influence = hand.influence = 1
-            end = max(1, int(action.frame_range[1]))
-            bpy.ops.nla.bake(frame_start=0, frame_end=max(1, int(action.frame_range[1])),
-                            step=1, only_selected=False, visual_keying=True,
-                            clear_constraints=False, use_current_action=True, bake_types={'POSE'})
-            # A target parented to a gun on the same armature creates a dependency
-            # cycle. Sample the foregrip into a separate world-space target first.
-            primary.influence = hand.influence = 0
-            target = bpy.data.objects.new('BakedSupportTarget', None)
-            bpy.context.collection.objects.link(target)
-            for frame in range(end + 1):
-                bpy.context.scene.frame_set(frame)
-                bpy.context.view_layer.update()
-                # Lower-arm IK ends at the wrist. Offset the fingertip-sized
-                # foregrip so the palm, rather than the elbow, meets the weapon.
-                target.location = fore.matrix_world.translation + Vector((0, .035, -.025))
-                target.keyframe_insert(data_path='location', frame=frame)
-            support = rig.pose.bones['LowerArm.R'].constraints.new('IK')
-            support.target = target
-            support.chain_count = 2
-            support.use_stretch = False
-            support.influence = .45 if clip == 'Reload' else 1
-            bpy.ops.nla.bake(frame_start=0, frame_end=end, step=1, only_selected=False,
-                            visual_keying=True, clear_constraints=False,
-                            use_current_action=True, bake_types={'POSE'})
-            rig.pose.bones['LowerArm.R'].constraints.remove(support)
-            target_action = target.animation_data.action
-            bpy.data.objects.remove(target, do_unlink=True)
-            bpy.data.actions.remove(target_action)
-    rig.pose.bones['LowerArm.L'].constraints.remove(primary)
-    finger.constraints.remove(hand)
-    for obj in (main, orientation):
-        bpy.data.objects.remove(obj, do_unlink=True)
-    rig.animation_data.action = bpy.data.actions['Idle_Gun']
-    mirror = bpy.data.objects.new('RightHandedRig', None)
-    bpy.context.collection.objects.link(mirror)
-    for obj in list(bpy.context.scene.objects):
-        if obj != mirror and obj.parent is None:
-            obj.parent = mirror
-    mirror.scale.x = -1
-    rig['zombie_slop_handedness'] = 'right'
-    rig['zombie_slop_two_hand_pose_version'] = 2
-    bpy.ops.wm.save_as_mainfile(filepath=str(path))
-    return path
 
 
 def isolate(names, size=None):
@@ -214,8 +111,16 @@ def portable_materials():
 
 
 if not a.export_only:
-    right_handed()
+    right_handed(private / "quaternius/survivor.blend", a.repair_poses)
     selections = {
+        'tree-pine': ('nature', 'PineTree_3', (4.2, 4.2, 8.0)),
+        'tree-willow': ('nature', 'Willow_2', (6, 6, 7)),
+        'flowers': ('nature', 'Flowers', (.5, .5, .4)),
+        'woodlog': ('nature', 'WoodLog_Moss', (1.8, .6, .5)),
+        'bush-berries': ('nature', 'BushBerries_1', (1.3, 1.3, 1)),
+        'backpack': ('survival', 'Backpack', (.4, .25, .5)),
+        'campfire': ('survival', 'Bonfire', (.9, .9, .28)),
+        'tent': ('survival', 'Tent', (2.8, 2.2, 1.7)),
         'tree': ('nature', 'CommonTree_1', (3.8, 3.8, 6.8)),
         'tree-birch': ('nature', 'BirchTree_2', (3, 3, 6.4)),
         'tree-dead': ('nature', 'CommonTree_Dead_3', (3.4, 3.4, 6.5)),

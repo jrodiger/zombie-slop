@@ -3,6 +3,10 @@ const Movement=preload("res://game/movement.gd")
 var game
 var visual:Node3D
 var animation:AnimationPlayer
+var variant:String="zombie"
+var max_hp:float=100
+var attack_damage:float=12
+var chase_speed:float=2.15
 var hp:float=100
 var think_left:float=0
 var attack_left:float=0
@@ -15,9 +19,12 @@ var path_index:int=0
 var stagger:float=0
 func configure(owner_game,spawn:Vector3,index:int):
  game=owner_game;floor_snap_length=.25;position=spawn;origin=spawn;destination=spawn;think_left=float(index)*.043;collision_layer=4;collision_mask=1
- var shape=CapsuleShape3D.new();shape.radius=.34;shape.height=1.75
- var collider=CollisionShape3D.new();collider.shape=shape;collider.position.y=.9;add_child(collider)
- visual=game.assets.model("zombie");add_child(visual);animation=game.assets.animation(visual);add_to_group("zombies")
+ variant=["zombie","zombie","zombie-chubby","zombie-arm","zombie-ribcage"][index%5]
+ max_hp=220 if variant=="zombie-chubby" else (70 if variant=="zombie-ribcage" else (130 if variant=="zombie-arm" else 100));hp=max_hp
+ chase_speed=1.7 if variant=="zombie-chubby" else (2.7 if variant=="zombie-arm" else 2.15);attack_damage=22 if variant=="zombie-chubby" else 12
+ var shape=CapsuleShape3D.new();shape.radius=.48 if variant=="zombie-chubby" else .34;shape.height=1.95 if variant=="zombie-chubby" else (1.05 if variant=="zombie-ribcage" else 1.75)
+ var collider=CollisionShape3D.new();collider.shape=shape;collider.position.y=shape.height/2+.025;add_child(collider)
+ visual=game.assets.model(variant);add_child(visual);animation=game.assets.animation(visual);add_to_group("zombies")
  # AI/collision remain live; hidden skeletons do not need pose updates. The
  # notifier follows the capsule and resumes the current clip when visible.
  var visibility=VisibleOnScreenNotifier3D.new();visibility.aabb=AABB(Vector3(-1,-.1,-1),Vector3(2,2.2,2));add_child(visibility)
@@ -44,13 +51,13 @@ func _physics_process(delta):
   if Vector2(global_position.x-target.x,global_position.z-target.z).length()<.6:path_index+=1
  var direction=target-global_position;direction.y=0
  if direction.length()>.2:direction=direction.normalized()
- var speed=2.15 if alerted>0 else .75
+ var speed=chase_speed if alerted>0 else .75
  velocity.x=direction.x*speed if stagger<=0 else 0.0;velocity.z=direction.z*speed if stagger<=0 else 0.0
  if not is_on_floor():velocity.y-=20*delta
  else:velocity.y=0.0
- if player_distance<1.4:
+ if player_distance<1.4 and game.player.driving==null:
   velocity.x=0;velocity.z=0
-  if attack_left<=0:attack_left=1.25;game.player.take_damage(12);game.assets.animate(animation,"Attack",.08,false)
+  if attack_left<=0:attack_left=1.25;game.player.take_damage(attack_damage);game.assets.animate(animation,"Attack",.08,false)
  if Movement.step_up(self,Vector3(velocity.x,0,velocity.z)*delta):
   var horizontal=Vector2(velocity.x,velocity.z);velocity.x=0;velocity.z=0;move_and_slide();velocity.x=horizontal.x;velocity.z=horizontal.y
  else:move_and_slide()

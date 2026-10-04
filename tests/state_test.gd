@@ -1,4 +1,5 @@
 extends SceneTree
+const Catalog=preload("res://game/catalog.gd")
 const State=preload("res://game/state.gd")
 var checks:int=0
 var failures:int=0
@@ -73,6 +74,28 @@ func _initialize():
  check(not gun_load.restore(bad_gun),"Overfilled weapon magazine rejected")
  bad_gun=gun_save.duplicate(true);bad_gun.weapons.rifle=19
  check(not gun_load.restore(bad_gun),"Conflicting active magazine rejected")
+ var v3=gun_save.duplicate(true);v3.version=3;v3.erase("character");v3.erase("loot_seed");v3.erase("vehicles");v3.inventory.erase("backpack");v3.inventory.erase("campfire")
+ var v4=State.new();check(v4.restore(v3) and v4.character=="matt" and v4.loot_seed==4815,"Version-three saves migrate with stable loot seed and Matt")
+ var legacy_extra=v3.duplicate(true);legacy_extra.character={};legacy_extra.loot_seed="bad";legacy_extra.vehicles="bad"
+ check(v4.restore(legacy_extra) and v4.character=="matt" and v4.loot_seed==4815 and v4.vehicles.is_empty(),"Legacy migration ignores unvalidated fields from future versions")
+ check(v4.objects==gun_save.objects and v4.weapons==gun_save.weapons,"Migration keeps base and weapons")
+ v4.character="lis";v4.vehicles={"parked-1":{"position":[5.0,.2,8.0],"yaw":.5}};v4.loot_seed=2147483646
+ var json_state=State.parse_json(JSON.stringify(v4.snapshot(),"",true,true));var from_json=State.new()
+ check(from_json.restore(json_state) and from_json.snapshot()==v4.snapshot(),"JSON roundtrip preserves character, seed and parked car transform")
+ var bad_seed=v4.snapshot();bad_seed.loot_seed=1.25;check(not State.validate(bad_seed),"Fractional world seed rejected")
+ var bad_character=v4.snapshot();bad_character.character="unknown";check(not State.validate(bad_character),"Unknown survivor rejected")
+ var bad_vehicle=v4.snapshot();bad_vehicle.vehicles["parked-1"].yaw=NAN;check(not State.validate(bad_vehicle),"Nonfinite vehicle transform rejected")
+ check(v4.collect("axe-found","axe",1) and v4.equip("axe") and v4.magazine==0,"Melee weapon can be looted and equipped without ammunition")
+ var tables=load("res://game/loot_tables.gd")
+ var stock=tables.stock(77,"8 Cedar Lane","safe")
+ check(stock==tables.stock(77,"8 Cedar Lane","safe"),"Container loot is stable for a saved seed")
+ check(stock!=tables.stock(78,"8 Cedar Lane","safe"),"Different neighborhoods vary their loot")
+ check(stock.any(func(item):return item.kind=="rifle"),"Early safe always contains a rifle")
+ var stocked:Array=[]
+ for address in ["8 Cedar Lane","12 Cedar Lane","11 Cedar Lane","3 Cedar Lane","4 Cedar Lane","7 Cedar Lane","2 Orchard Way"]:
+  for item in tables.stock(999,address,"safe"):
+   if item.kind in Catalog.WEAPONS:stocked.append(item.kind)
+ check(stocked.size()==7,"Every expanded weapon family has a guaranteed world location")
  var path="user://test-progress.json"
  check(restored.save_to(path),"Save writes")
  restored.inventory.wood+=1

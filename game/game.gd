@@ -34,7 +34,9 @@ var sound_index:int=0
 var ambience:AudioStreamPlayer
 var completed_announced:bool=false
 var open_container_id:String=""
+var inventory_open:bool=false
 func _ready():
+ if "--inspection" in OS.get_cmdline_user_args():save_path="user://inspection-survival.json"
  if "--manual-test" in OS.get_cmdline_user_args():save_path="user://manual-test-survival.json"
  if "--integration" in OS.get_cmdline_user_args() or "--verify-load" in OS.get_cmdline_user_args():save_path="user://integration-survival.json"
  if "--benchmark" in OS.get_cmdline_user_args():save_path="user://benchmark-survival.json"
@@ -45,6 +47,7 @@ func _ready():
  if "--integration" in OS.get_cmdline_user_args():call_deferred("integration")
  if "--benchmark" in OS.get_cmdline_user_args():call_deferred("benchmark")
  if "--verify-load" in OS.get_cmdline_user_args():call_deferred("verify_load")
+ if "--inspection" in OS.get_cmdline_user_args():call_deferred("inspection")
 func create_world():
  world=World.new();add_child(world);world.configure(self)
  player=Player.new();add_child(player);player.configure(self);player.position=Vector3(-24,.2,22);player.yaw=PI;player.visual.rotation.y=0
@@ -62,12 +65,15 @@ func inputs():
  bind("jump",KEY_SPACE,JOY_BUTTON_RIGHT_SHOULDER)
  bind("interact",KEY_E,JOY_BUTTON_A)
  bind("build",KEY_B,JOY_BUTTON_Y)
+ bind("inventory",KEY_TAB,JOY_BUTTON_BACK)
  bind("reload",KEY_R,JOY_BUTTON_X)
  bind("heal",KEY_H,JOY_BUTTON_DPAD_UP)
  bind("weapon_next",KEY_V,JOY_BUTTON_DPAD_LEFT)
  bind("weapon_pistol",KEY_1)
  bind("weapon_rifle",KEY_2)
  bind("weapon_shotgun",KEY_3)
+ for kind in catalog.WEAPONS:
+  if not InputMap.has_action("weapon_"+kind):bind("weapon_"+kind)
  bind("pause",KEY_ESCAPE,JOY_BUTTON_START)
  bind("cancel",KEY_ESCAPE,JOY_BUTTON_B)
  bind("move_item",KEY_G,JOY_BUTTON_LEFT_SHOULDER)
@@ -90,11 +96,17 @@ func bind(action:String,key:int=0,button:int=JOY_BUTTON_INVALID,axis:int=-1,valu
  if button!=JOY_BUTTON_INVALID:var e=InputEventJoypadButton.new();e.button_index=button;InputMap.action_add_event(action,e)
  if axis>=0:var e=InputEventJoypadMotion.new();e.axis=axis;e.axis_value=value;InputMap.action_add_event(action,e)
  if mouse>0:var e=InputEventMouseButton.new();e.button_index=mouse;InputMap.action_add_event(action,e)
+func _input(event):
+ # Tab is also a GUI focus key. Close the inventory before focused controls
+ # consume it, including immediately after selecting another survivor.
+ if running and overlay and inventory_open and event.is_action_pressed("inventory"):
+  close_overlay();get_viewport().set_input_as_handled()
 func _unhandled_input(event):
  if event is InputEventKey and event.echo:return
  if event.is_action_pressed("debug"):show_performance=not show_performance
  if event.is_action_pressed("save") and running:save_game()
  if overlay:
+  if event.is_action_pressed("inventory") and inventory_open:close_overlay();return
   if event.is_action_pressed("cancel") and running:close_overlay()
   return
  if not running:return
@@ -115,6 +127,11 @@ func _unhandled_input(event):
     if event.button_index==MOUSE_BUTTON_WHEEL_UP:placement_yaw+=increment
     if event.button_index==MOUSE_BUTTON_WHEEL_DOWN:placement_yaw-=increment
   return
+ if event.is_action_pressed("inventory"):ui.backpack();return
+ if player.driving!=null:
+  if event.is_action_pressed("interact"):player.driving.exit_driver()
+  elif event.is_action_pressed("pause"):ui.pause()
+  return
  if event.is_action_pressed("pause"):ui.pause()
  if event.is_action_pressed("build"):ui.build_menu()
  if event.is_action_pressed("interact"):interact()
@@ -131,8 +148,13 @@ func _process(delta):
  if objective_complete() and not completed_announced:completed_announced=true;toast("A PLACE TO CALL HOME  ·  Starter objective complete. Keep exploring and building.");sound("pickup")
  autosave_left-=delta
  if autosave_left<=0 and placement_kind=="":autosave_left=60;save_game(false)
+func change_character(kind:String):
+ if not catalog.CHARACTERS.has(kind):return
+ if player.driving!=null:toast("Leave the vehicle before changing survivor");return
+ player.set_character(kind);toast("Playing as "+str(catalog.CHARACTERS[kind]))
 func new_game():
- state.reset();completed_announced=false;rebuild();running=true;close_overlay();toast("Search your kitchen drawers for materials. Bring home furnishings from the neighborhood.")
+ var chosen=state.character
+ state.reset();state.character=chosen;completed_announced=false;rebuild();running=true;close_overlay();toast("Search your kitchen drawers for materials. Bring home furnishings from the neighborhood.")
 func rebuild():
  cancel_placement()
  if is_instance_valid(world):remove_child(world);world.queue_free()
@@ -144,21 +166,24 @@ func rebuild():
  player.reset_physics_interpolation()
  # Detect corrupt/obsolete locations or placement intersecting the capsule.
  var q=PhysicsShapeQueryParameters3D.new();q.shape=player.get_child(0).shape;q.transform=Transform3D(Basis(),player.position+Vector3.UP*.9);q.collision_mask=1
- if player.position.y<-.5 or player.position.y>8 or absf(player.position.x)>120 or absf(player.position.z)>120 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
+ var ground=world.ground_height(player.position.x,player.position.z)
+ if player.position.y<ground-.4 or player.position.y>ground+9 or absf(player.position.x)>120 or absf(player.position.z)>120 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
  apply_settings()
 func close_overlay():
- open_container_id=""
+ open_container_id="";inventory_open=false
  world.close_containers()
  ui.clear_panel();overlay=false
  if running:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func die():
  running=false;Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;cancel_placement();ui.death()
 func recover_player():
+ if player.driving!=null and not player.driving.exit_driver():return
  player.global_position=Vector3(-24,.4,20);player.velocity=Vector3.ZERO
  player.reset_physics_interpolation()
  if ui!=null:toast("Returned to the home path")
 func save_game(notify:bool=true) -> bool:
  if not running or state.health<=0:return false
+ for car in get_tree().get_nodes_in_group("vehicles"):state.vehicles[car.ident]=car.snapshot()
  state.player_position=[player.position.x,player.position.y,player.position.z]
  var success=state.save_to(save_path)
  if notify:toast("Progress saved" if success else state.save_error)
@@ -206,27 +231,36 @@ func nearest_piece():
   var d=player.global_position.distance_to(piece.global_position)
   if d<distance:best=piece;distance=d
  return best
+func interaction_distance(entry:Dictionary,container:bool) -> float:
+ var height=.7 if container else minf(.7,float(catalog.ITEMS[entry.kind].size.y)*.5)
+ return (entry.node.global_position+Vector3.UP*height).distance_to(player.global_position+Vector3.UP)
 func interaction_prompt() -> String:
+ if player.driving!=null:return "E / A Exit · Space / RB Brake  ·  %d km/h"%roundi(absf(player.driving.speed)*3.6)
  if placement_kind!="":return "" if placement_valid else placement_reason
  var loot=world.nearest_loot(player.global_position)
- if loot!=null:return "E / A  ·  Take "+(catalog.ITEMS[loot.kind].name if catalog.ITEMS.has(loot.kind) else loot.kind.capitalize()+" ×"+str(loot.amount))
  var container=world.nearest_container(player.global_position)
+ if loot!=null and (container==null or interaction_distance(loot,false)<interaction_distance(container,true)):return "E / A  ·  Take "+(catalog.ITEMS[loot.kind].name if catalog.ITEMS.has(loot.kind) else loot.kind.capitalize()+" ×"+str(loot.amount))
  if container!=null:return "E / A  ·  Search "+container.title+("  (empty)" if world.container_items(container).is_empty() else "")
+ var car=world.nearest_vehicle(player.global_position)
+ if car!=null:return "E / A  ·  Drive "+car.kind.replace("car-","").replace("-"," ").capitalize()
  var piece=nearest_piece()
  if piece!=null:
   var name=catalog.ITEMS[piece.data.kind].name
   return ("E / A  Use   ·   " if piece.data.kind in ["door","storage"] else "")+"G / LB  Move   ·   X / D-pad ↓  Recover "+name
  return ""
 func interact():
+ if player.driving!=null:player.driving.exit_driver();return
  var loot=world.nearest_loot(player.global_position)
- if loot!=null:
+ var container=world.nearest_container(player.global_position)
+ if loot!=null and (container==null or interaction_distance(loot,false)<interaction_distance(container,true)):
   if state.collect(loot.id,loot.kind,loot.amount):
    loot.node.queue_free();sound("pickup");toast("Collected "+loot.kind.capitalize()+" ×"+str(loot.amount))
    if loot.kind in catalog.WEAPONS:player.equip(loot.kind)
   return
- var container=world.nearest_container(player.global_position)
  if container!=null:
   open_container_id=container.id;world.search_container(container);ui.loot_menu(container);return
+ var car=world.nearest_vehicle(player.global_position)
+ if car!=null:car.enter(player);return
  var piece=nearest_piece()
  if piece==null:return
  if piece.data.kind=="door":piece.toggle()
@@ -252,6 +286,7 @@ func pickup_nearest():
  if not piece.data.contents.is_empty():toast("Empty the supply chest before moving it to inventory");return
  if state.remove(int(piece.data.id)):piece.queue_free();sound("pickup");toast("Recovered item / full construction refund")
 func begin_placement(kind:String,ident:int=-1):
+ if player.driving!=null:toast("Leave the vehicle before building");return
  if ident<0 and not state.can_afford(kind):toast("Collect this object or gather its materials first");return
  cancel_placement();close_overlay();placement_kind=kind;moving_id=ident;placement_height=0;placement_distance=4;placement_yaw=player.yaw
  if ident>=0:placement_yaw=float(state.find_object(ident).yaw)
@@ -367,6 +402,8 @@ func verify_load():
  var code=await script.verify_relaunch(self)
  script.queue_free();await get_tree().process_frame;finish_run(code)
 
+func inspection():
+ var script=load("res://tests/inspection.gd").new();add_child(script);var code=await script.run(self);finish_run(code)
 func report_dir() -> String:
  var root=OS.get_environment("ZOMBIE_REPORT_DIR")
  if root=="":root=OS.get_user_data_dir()+"/verification"

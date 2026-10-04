@@ -1,4 +1,54 @@
-# Current validation — iteration three
+# Current validation — iteration four
+
+Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal, 1280×800. Normal play retains the 60 FPS cap, VSync and shadows off. Steam Deck and physical controller feel remain unverified.
+
+## Gameplay and model verification
+
+**99 source/save checks and 403 native exported graphical checks pass**, followed by **six fresh-process save/relaunch checks**. This round exercises all four survivor choices through the real inventory callback, all nine discoverable weapons through actual household contents menus, all four zombie variants, and all seven drivable vehicles. Additional coverage verifies right-handed firearm poses for every survivor, lowered versus raised barrel orientation, support-hand contact for all four long guns, real SMG/revolver/compact-shotgun damage and ammo spending, timed melee contact/no ammo/wall occlusion, interrupted actions on vehicle entry, acceleration/steering/braking/safe exit, exact parked transforms, seeded loot variation, and legacy migration. All 28 safe/fridge fronts meet their exported hinges and all fourteen roof eaves overlap their wall tops. Actual physics movement crosses sidewalks diagonally, climbs the outer slopes, crosses the eastern river bridge without jumping and remains contained at the high map corner. Supported river-bed saves reload there; older flat-map positions beneath new hills recover to the home path.
+
+An exported inspection process walked the player through **32 actual room targets** across four houses, without failed targets. Screenshots cover front/eaves, backyard, kitchen, opened fridge, bedroom, opened safe and a reverse bedroom view, plus wooded slopes and both bridge approaches. Fixed inspection cameras hide only the player visual so it cannot obscure the geometry; the capsule still performs the actual room walks. This is engine-scripted input in a rendered exported game, rather than a claim of a human walking every room. Geometry tests cover all houses; screenshot inspection covers four, not every possible camera angle.
+
+Screenshots exposed and led to corrections of doubled cabinet parent offsets, incorrect fixture facing, roof/wall separation, overlapping furniture, a shelf obscuring a refrigerator, overly steep lowered weapon poses and vegetation obscuring the bridge view. Further movement testing found a hard height boundary at the eastern bridge approach; it now blends gradually into the hillside. Tree navigation and respawn clearance use the actual local terrain height.
+
+Desktop automation additionally clicked New Neighborhood, opened Tab inventory, selected Lis, closed inventory with Tab, opened Escape pause and saved/quit an isolated session. This caught GUI focus consuming Tab after survivor selection; the close event now runs before GUI focus handling and is tested for all four survivors with real input dispatch. Blender's graphical interface opened and framed the editable safe for inspection without saving the model. These observations supplement the repeatable rendered suite; no physical gamepad was attached.
+
+The user's actual version-three save also passed a read-only version-four migration check, preserving inventory, collected identities, placed count and weapon magazines. The user's current saves/settings were copied to external `backups/pre-iteration4-saves/`. Automated and direct desktop modes use separate save files, and manual-test mode skips preference writes. The stable playable app is `builds/Zombie Slop.app`; earlier root build outputs are preserved in `backups/build-history-before-stable-app/`, with Linux/Windows exports organized beneath `builds/cross-platform/`. Assets, builds, images and reports remain outside public Git and CI artifacts. Private asset sources/LFS objects were checkpointed and uploaded as recorded in ASSETS.json; pristine downloads and prior sources remain retained.
+
+CodeRabbit's character-update workflow finding was corrected: standalone `--update-characters` rebuilds the four survivors while reusing existing non-survivor sources and creating missing ones. A disposable filesystem harness passed 15 assertions across six CLI scenarios, retaining the real argument validation, source iteration, overwrite guards, hash checks and complete 22-entry manifest writing, with Blender geometry calls stubbed. It also checks default overwrite refusal, resume, export-only and incompatible flags. This is control-flow coverage, not an additional Blender geometry test.
+
+## Sustained performance
+
+The exported Metal build completed **600.009 seconds** at **1280×800**, with the **60 FPS cap / VSync on, shadows off**, **18 living zombies in every measured section**, and **50 placed objects**. No other graphical game or Blender session ran concurrently. The eight views repeat twice (75 seconds per view in total), with actual movement, shots, placement preview and vehicle acceleration. Benchmark-only health/ammo replenishment preserves the stress workload; section transitions remain included.
+
+- Average **59.97 FPS**; p50/p95/p99 **16.678 / 17.986 / 18.632 ms**.
+- **1% low 52.41 FPS**; maximum **24.010 ms**.
+- **23 / 35,984 frames exceeded 20 ms; zero exceeded 33.333 ms**.
+- 18,322 frames exceeded the literal 16.667 ms threshold, including capped presentation jitter. This demonstrates near-60 pacing with brief dips, **not perfectly sustained 60 FPS** or Steam Deck capacity.
+
+| View (two laps) | Average FPS | p99 ms | 1% low FPS |
+|---|---:|---:|---:|
+| 50-piece furnished base | 59.97 | 18.721 | 52.38 |
+| Driving | 59.97 | 18.403 | 52.94 |
+| Forest and river | 59.97 | 18.107 | 53.40 |
+| Interior | 59.97 | 18.709 | 51.54 |
+| Placement preview | 59.97 | 18.701 | 52.18 |
+| Populated supply view | 59.97 | 18.717 | 52.73 |
+| Shooting encounter | 59.97 | 18.715 | 51.70 |
+| Street traversal | 59.97 | 18.518 | 53.25 |
+
+Sampled physics medians ranged from 1.90 ms (forest/river) to 4.58 ms (driving); the largest sampled physics frame was 9.14 ms during shooting. Median draws ranged from 54.5 (shooting) to 134.5 (furnished base). Process monitors include presentation waiting and do not isolate render CPU cost. This run has a shorter frame-time tail than iteration three, despite more content, but the routes differ and it is not a controlled feature-by-feature comparison. There is no evidence here of a large sustained bottleneck needing reduced map density. Remaining pacing jitter and platform-specific rendering need further investigation before promising perfect 60 FPS.
+
+The primary report and viewport image are external under `verification/iteration4/performance/`. Subsequent changes calibrate car/truck/wreck collision bounds, extend invisible map boundaries above the hilltops, move decorative grills inside the rear fence, reset menu input state and align saved-position recovery with local terrain height; rendered geometry, asset sources, density and graphics settings are unchanged. The final exported integration and short pacing check cover those corrections. The final 60-second exported check measured 59.97 FPS, p95/p99 17.988 / 18.650 ms, 1% low 50.71 FPS, maximum 29.547 ms and no frames over 33.333 ms. Its separate report is under `verification/iteration4/final-check/`.
+
+## Review status
+
+PR #3 was explicitly authorized for merge at the user's discretion after its existing findings were addressed and required CI passed. It was squash-merged on 2026-10-04 as `d8b63256815f781bba9404f20574319f915a11ec`, without implying a fresh current-head CodeRabbit review. That override applies to PR #3. Iteration four uses a separate feature branch/PR and the original current-head review gate below; its review is requested only after this full feature round and validation are committed.
+
+## Prototype limits
+
+The map remains a 248m low-poly prototype with fourteen houses, rather than a large finished open world. Interior furniture positions vary but house floor plans are reused. Vehicles have arcade controls and a hidden survivor instead of seated animation; no fuel, vehicle destruction or detailed drivetrain. Backpack/campfire are placeable props, without expanded inventory capacity or cooking. Street cross/turn sources are prepared but only straight/cracked pack tiles render in the present layout. The ribcage zombie uses its own sparse rig and HitReact alias rather than sharing an incompatible attack rig. There is no layered upper-body aim system; complete same-rig weapon clips blend at runtime. Save/load restores the player on foot and uses normal obstruction recovery if saved inside a car. Linux/Windows are cross-exported and not runtime-tested; Steam Deck and Android remain unverified.
+
+# Prior iteration-three validation
 
 Local target: Apple M3 MacBook Air, 16 GB, Godot 4.7.2 Mobile / Metal at 1280×800. Default settings retain the 60 FPS cap, VSync and shadows off. Steam Deck and physical controller feel remain unverified.
 

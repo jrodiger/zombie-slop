@@ -1,6 +1,6 @@
 # Playing Zombie Slop
 
-Launch the native `Zombie Slop Iteration 3.app` in the external builds folder, or run `./scripts/run.sh` after installing external assets. Choose **New Neighborhood** or **Continue Saved Game**. Gamepad menu navigation uses D-pad/left stick and A to activate focused controls.
+Launch the native `Zombie Slop.app` in the external builds folder, or run `./scripts/run.sh` after installing external assets. Choose Matt, Lis, Sam or Shaun and **New Neighborhood**, or **Continue Saved Game**. The same app path is updated each iteration; earlier builds are archived in the external backups folder. Gamepad menu navigation uses D-pad/left stick and A to activate focused controls.
 
 ## Controls
 
@@ -9,10 +9,14 @@ Launch the native `Zombie Slop Iteration 3.app` in the external builds folder, o
 | Move / look | WASD / mouse | Left / right stick |
 | Sprint | Shift | L3 |
 | Jump | Space | RB |
-| Aim / fire | Right / left mouse | LT / RT |
+| Aim / fire or melee | Right / left mouse | LT / RT |
 | Reload | R | X |
-| Select pistol / rifle / shotgun | 1 / 2 / 3 | Cycle owned guns below |
-| Cycle owned guns | V | D-pad left |
+| Select pistol / rifle / shotgun | 1 / 2 / 3 | Cycle owned weapons below |
+| Cycle owned weapons | V | D-pad left |
+| Inventory / character selection | Tab | Back / Select |
+| Enter / exit nearby car | E | A |
+| Drive / steer | W / S and A / D | Left stick |
+| Brake | Space | RB |
 | Collect / search / use door / storage | E | A |
 | Build / decorate menu | B | Y |
 | Heal | H | D-pad up |
@@ -34,11 +38,32 @@ While placing, placement actions take precedence over combat/healing. Gamepad mo
 
 Home is the green bungalow at 14 Cedar Lane, where you start. The HUD shows its distance and compass direction. Search the kitchen drawers on the right for wood and scrap. The potted fern sits by the street at the first approach. Other collectible furnishings are real objects inside neighboring homes; look closely and use E / A when the prompt appears. Return to within 12m of home, open B / Y, choose an object, and aim at ground, floor, a table or shelf. A green preview and “Ready to place” mean you can confirm. Finally build a barricade or supply chest. Completion leaves the neighborhood open for sandbox play.
 
-All fourteen houses have accessible interiors, window openings, kitchens and bedroom spaces. Search drawers, refrigerators and bedroom safes, then choose individual stacks in the contents menu. Each stack is collected once and remaining contents persist through saves. Walls and intact window glass block searching from outside. The safe at 8 Cedar Lane contains a rifle and rifle rounds; 12 Cedar Lane has a shotgun and shells. Find their addresses in each container menu. Collecting a weapon equips it unloaded; reload before firing. Guns retain separate magazines and ammunition reserves when switching. Switching or death cancels a reload before ammunition transfers. Gunfire attracts nearby enemies.
+All fourteen houses have accessible interiors, window openings, kitchens and bedroom spaces. Search drawers, refrigerators and bedroom safes, then choose individual stacks in the contents menu. Each stack is collected once and remaining contents persist through saves. Walls and intact window glass block searching from outside. Supplies vary by neighborhood seed and address: food/water in fridges, materials and common ammo in drawers, weapons/ammo and occasional medicine in safes. The seed persists, so reopening or loading cannot reroll collected stock. Guaranteed weapon locations:
 
-When sprint stamina runs out, you settle into walking. Release sprint and recover at least 25 stamina before sprinting again. H / D-pad up uses a medkit, then food or water if necessary. Pause → Backpack lets you choose a specific supply or weapon; full health cannot waste a healing item. There is no hunger meter.
+| Location | Weapon |
+|---|---|
+| Home kitchen drawers (14 Cedar) | Axe |
+| 8 Cedar bedroom safe | Rifle + rifle ammo |
+| 12 Cedar bedroom safe | Shotgun + shells |
+| 11 Cedar bedroom safe | SMG + pistol ammo |
+| 3 Cedar bedroom safe | Revolver + pistol ammo |
+| 4 Cedar bedroom safe | Compact shotgun + shells |
+| 7 Cedar bedroom safe | Barbed bat |
+| 2 Orchard bedroom safe | Knife |
 
-Killed zombies are replaced gradually, up to eighteen living enemies. Replacements spawn at least 32m away, behind your view, on reachable ground and outside a 26m home exclusion area. The first check occurs after 25 seconds, then every 15 seconds while the game is active. Loot does not refill when enemies respawn.
+ Find their addresses in each container menu. Collecting a weapon equips it unloaded; reload before firing. Guns retain separate magazines and ammunition reserves when switching. Switching or death cancels a reload before ammunition transfers. Gunfire attracts nearby enemies.
+
+When sprint stamina runs out, you settle into walking. Release sprint and recover at least 25 stamina before sprinting again. H / D-pad up uses a medkit, then food or water if necessary. Tab / Back or Pause → Inventory lets you choose a specific supply or weapon; full health cannot waste a healing item. There is no hunger meter.
+
+Guns use a lowered ready pose while walking, raising when aiming or firing. Rifles, shotguns and the SMG use the supporting hand on the foregrip; reloads release it. Melee uses authored Slash/Stab clips, timed contact, reach and a wall-blocking check. Switching cancels an unfinished swing; melee consumes no ammo. Tab also lets you switch between all four survivors during play, keeping progress and equipment. Character switching is unavailable while driving.
+
+Killed zombies are replaced gradually, up to eighteen living enemies. Replacements spawn at least 32m away, behind your view, on reachable ground and outside a 26m home exclusion area. The first check occurs after 25 seconds, then every 15 seconds while the game is active. Loot does not refill when enemies respawn. The basic, chubby, one-armed and ribcage variants have different health and speed; chubby zombies have 220 HP versus the basic zombie’s 100 HP.
+
+## Exploring and driving
+
+The eastern river has wooden crossings north and south. The outskirts rise into wooded slopes with pines, willows, berry bushes, flowers, logs and camps. Backpack and campfire props are recoverable at the west camp and placeable at home; they are decorative, without extra carrying capacity or cooking yet. Roads use the pack’s atlas street surfaces. Sidewalk edges are sloped for crossings, including diagonal approaches.
+
+Seven parked vehicles include all six Apocalypse variants and the ITHappy wreck. Approach a car and press E / A to enter, then accelerate, reverse, steer and brake. E / A exits to the first clear adjacent spot; move the car if all exits are obstructed. Vehicles collide with the world and can hit zombies. Parked position/heading persists. Driving is an arcade prototype: the survivor is hidden while driving, without a seated animation, fuel, damage or drivetrain simulation. Save/load restores you on foot, recovering to the home path if the saved position overlaps a vehicle.
 
 ## Placement and building
 
@@ -52,6 +77,6 @@ Stationary pieces are static collision bodies; only previews update each frame. 
 
 Autosave occurs every 60 seconds outside menus/previews. F5 and pause → Save create explicit checkpoints. Save and Quit saves before closing. Death preserves the last valid checkpoint; choose Load Last Save or New Neighborhood. Closing the window normally is an autosave-based exit; use Save and Quit for an immediate checkpoint.
 
-Progress is stored in the game's local application-support folder: `survival.json`, with `.bak` for the previous valid save. Invalid/missing saves produce a readable message; a valid backup is recovered automatically. Collected world identities, inventory, placed identity/transforms, construction HP/door state, storage and starter progress are persisted. Enemy positions are repopulated on load; essential base progress remains. Version-one and version-two saves migrate automatically to version three, preserving weapons, items, collected identities and arrangements. New food and water stacks start empty. New permanent home fixtures yield to previously placed objects, protecting an existing base. Settings are saved separately in `settings.cfg`; current preferences take priority over settings embedded in an older progress save. Gameplay defaults to a 60 FPS cap and shadows off; uncapped mode remains available for profiling. Test/benchmark modes use separate save files.
+Progress is stored in the game's local application-support folder: `survival.json`, with `.bak` for the previous valid save. Invalid/missing saves produce a readable message; a valid backup is recovered automatically. Collected world identities, inventory, placed identity/transforms, construction HP/door state, storage and starter progress are persisted. Enemy positions are repopulated on load; essential base progress remains. Version-one, version-two and version-three saves migrate automatically to version four, preserving weapons, items, collected identities and arrangements. Old neighborhoods receive a stable default loot seed; already collected identities stay collected. New weapon/furnishing counts start empty. Selected character, loot seed and parked vehicle transforms persist. New permanent home fixtures yield to previously placed objects, protecting an existing base. Settings are saved separately in `settings.cfg`; current preferences take priority over settings embedded in an older progress save. Gameplay defaults to a 60 FPS cap and shadows off; uncapped mode remains available for profiling. Test/benchmark modes use separate save files.
 
-If geometry traps you, pause → **Return Home If Stuck**. On load the game checks obviously invalid or obstructed positions and uses the home path as a recovery point. There is no multiplayer, drivable vehicle, electricity or complex crafting tree in this prototype.
+If geometry traps you, pause → **Return Home If Stuck**. On load the game checks obviously invalid or obstructed positions and uses the home path as a recovery point. There is no multiplayer, electricity or complex crafting tree in this prototype.
