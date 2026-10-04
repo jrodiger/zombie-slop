@@ -11,6 +11,8 @@ Launch the native `Zombie Slop.app` in the external builds folder, or run `./scr
 | Jump | Space | RB |
 | Aim / fire | Right / left mouse | LT / RT |
 | Reload | R | X |
+| Select pistol / rifle / shotgun | 1 / 2 / 3 | Cycle owned guns below |
+| Cycle owned guns | V | D-pad left |
 | Collect / use door / storage | E | A |
 | Build / decorate menu | B | Y |
 | Heal | H | D-pad up |
@@ -32,7 +34,7 @@ While placing, placement actions take precedence over combat/healing. Gamepad mo
 
 Home is the green-roofed house labelled **HOME**. Collect wood and scrap immediately to the right of the front path, then explore toward the main street. The **potted fern** is near the street at the first approach; other designated collectibles have diamond markers. Return to within 12m of home. Open **B / Y**, choose the fern, point at ground, floor, table or shelf and rotate it. A green preview and “Ready to place” mean it can be confirmed. Finally build a barricade or supply chest. Completion leaves the neighborhood open for sandbox play.
 
-The supply house beyond the intersection contains extra materials, ammunition, medkits, a guitar and a display shelf, with more zombies nearby. Gunfire attracts enemies. Route around abandoned vehicles and use yard shortcuts. Six outer Kenney houses are closed shells; only the original home and supply house interiors are accessible.
+The supply house beyond the intersection contains extra materials, ammunition, medkits, a guitar and a display shelf, with more zombies nearby. A shotgun and shells sit on the western porch near the intersection; the rifle and rifle rounds are inside the supply house. Pick up a gun with E / A to equip it, then reload. Each gun retains its own magazine when switching; pistol rounds, rifle rounds and shells are separate reserves. Switching or death cancels a reload before ammunition is transferred. Gunfire attracts enemies. Route around abandoned vehicles and use yard shortcuts. Six outer Kenney houses are closed shells; only the original home and supply house interiors are accessible.
 
 ## Placement and building
 
@@ -46,6 +48,6 @@ Stationary pieces are static collision bodies; only previews update each frame. 
 
 Autosave occurs every 60 seconds outside menus/previews. F5 and pause → Save create explicit checkpoints. Save and Quit saves before closing. Death preserves the last valid checkpoint; choose Load Last Save or New Neighborhood. Closing the window normally is an autosave-based exit; use Save and Quit for an immediate checkpoint.
 
-Progress is stored in the game's local application-support folder: `survival.json`, with `.bak` for the previous valid save. Invalid/missing saves produce a readable message; a valid backup is recovered automatically. Collected world identities, inventory, placed identity/transforms, construction HP/door state, storage and starter progress are persisted. Enemy positions are repopulated on load; essential base progress remains. Settings are saved separately in `settings.cfg`. Test/benchmark modes use separate save files.
+Progress is stored in the game's local application-support folder: `survival.json`, with `.bak` for the previous valid save. Invalid/missing saves produce a readable message; a valid backup is recovered automatically. Collected world identities, inventory, placed identity/transforms, construction HP/door state, storage and starter progress are persisted. Enemy positions are repopulated on load; essential base progress remains. Version-one progress migrates automatically to the multi-weapon save format, preserving existing items and arrangements. Settings are saved separately in `settings.cfg`; current preferences take priority over settings embedded in an older progress save. Gameplay defaults to a 60 FPS cap and shadows off; uncapped mode remains available for profiling. Test/benchmark modes use separate save files.
 
 If geometry traps you, pause → **Return Home If Stuck**. On load the game checks obviously invalid or obstructed positions and uses the home path as a recovery point. There is no hunger, multiplayer, drivable vehicle, electricity or complex crafting tree in this prototype.

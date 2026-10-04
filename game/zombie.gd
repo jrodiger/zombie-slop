@@ -1,4 +1,5 @@
 extends CharacterBody3D
+const Movement=preload("res://game/movement.gd")
 var game
 var visual:Node3D
 var animation:AnimationPlayer
@@ -17,6 +18,13 @@ func configure(owner_game,spawn:Vector3,index:int):
  var shape=CapsuleShape3D.new();shape.radius=.34;shape.height=1.75
  var collider=CollisionShape3D.new();collider.shape=shape;collider.position.y=.9;add_child(collider)
  visual=game.assets.model("zombie");add_child(visual);animation=game.assets.animation(visual);add_to_group("zombies")
+ # AI/collision remain live; hidden skeletons do not need pose updates. The
+ # notifier follows the capsule and resumes the current clip when visible.
+ var visibility=VisibleOnScreenNotifier3D.new();visibility.aabb=AABB(Vector3(-1,-.1,-1),Vector3(2,2.2,2));add_child(visibility)
+ if animation!=null:
+  animation.active=false
+  visibility.screen_entered.connect(func():animation.active=true)
+  visibility.screen_exited.connect(func():animation.active=false)
 func _physics_process(delta):
  if game==null or not game.running or game.overlay or not alive:return
  think_left-=delta;attack_left=maxf(0,attack_left-delta);alerted=maxf(0,alerted-delta);stagger=maxf(0,stagger-delta)
@@ -43,7 +51,9 @@ func _physics_process(delta):
  if player_distance<1.4:
   velocity.x=0;velocity.z=0
   if attack_left<=0:attack_left=1.25;game.player.take_damage(12);game.assets.animate(animation,"Attack",.08,false)
- move_and_slide()
+ if Movement.step_up(self,Vector3(velocity.x,0,velocity.z)*delta):
+  var horizontal=Vector2(velocity.x,velocity.z);velocity.x=0;velocity.z=0;move_and_slide();velocity.x=horizontal.x;velocity.z=horizontal.y
+ else:move_and_slide()
  for i in range(get_slide_collision_count()):
   var blocker=get_slide_collision(i).get_collider()
   if blocker!=null and blocker.is_in_group("placed") and blocker.blocked:

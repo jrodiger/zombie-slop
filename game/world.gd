@@ -8,6 +8,7 @@ var safe_center=Vector3(-24,0,30)
 var rng=RandomNumberGenerator.new()
 var sun:DirectionalLight3D
 var box_batches:Dictionary={}
+var regions:Dictionary={}
 func configure(owner_game):
  game=owner_game;rng.seed=4815
  navigation=AStarGrid2D.new();navigation.region=Rect2i(-76,-76,152,152);navigation.cell_size=Vector2.ONE;navigation.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;navigation.update()
@@ -55,7 +56,8 @@ func configure(owner_game):
  make_multimesh("grass",grasses)
  for i in range(7):
   var at=Vector3(3.2 if i%2 else -3.1,0,-55+i*17)
-  var car=game.assets.model("car");add_child(car);car.position=at;car.rotation.y=.15 if i%2 else -.22;collider(at+Vector3(0,.6,0),Vector3(2,1.2,4.2),true)
+  var car=game.assets.model("car");add_child(car);car.position=at;car.rotation.y=.15 if i%2 else -.22
+  var body=collider(at+Vector3(0,.775,0),Vector3(2,1.55,4.2),true);body.rotation.y=car.rotation.y
  # Landmark: tall water tower assembled from modular structural definitions.
  for x in [-2,2]:
   for z in [-2,2]:box(Vector3(-48+x,6,-8+z),Vector3(.25,12,.25),Color("5e746b"),true)
@@ -67,6 +69,7 @@ func configure(owner_game):
  box(Vector3(0,1.7,-71),Vector3(11,3.4,.5),Color("5c6857"),true)
  for boundary in [[Vector3(-75,3,0),Vector3(1,6,150)],[Vector3(75,3,0),Vector3(1,6,150)],[Vector3(0,3,-75),Vector3(150,6,1)],[Vector3(0,3,75),Vector3(150,6,1)]]:collider(boundary[0],boundary[1],true)
  build_box_batches()
+ build_regions()
  seed_loot()
  for i in range(18):
   var spawn=Vector3(rng.randf_range(-9,12),.2,rng.randf_range(-65,-5))
@@ -94,11 +97,27 @@ func build_box_batches():
 func collider(at:Vector3,size:Vector3,nav:bool):
  var body=StaticBody3D.new();body.collision_layer=1;body.collision_mask=0;var c=CollisionShape3D.new();var s=BoxShape3D.new();s.size=size;c.shape=s;body.add_child(c);add_child(body);body.position=at
  if nav and at.y+size.y*.5>.6 and at.y-size.y*.5<1.6:
-  for x in range(floori(at.x-size.x*.5-.35),ceili(at.x+size.x*.5+.35)+1):
-   for z in range(floori(at.z-size.z*.5-.35),ceili(at.z+size.z*.5+.35)+1):
+  # Mark grid centers inside the inflated footprint. Rounding outward adds
+  # another whole cell and seals otherwise usable two-meter doorways.
+  for x in range(ceili(at.x-size.x*.5-.35),floori(at.x+size.x*.5+.35)+1):
+   for z in range(ceili(at.z-size.z*.5-.35),floori(at.z+size.z*.5+.35)+1):
     var cell=Vector2i(x,z)
     if navigation.is_in_boundsv(cell):navigation.set_point_solid(cell)
  return body
+func build_regions():
+ # Static connected components reject impossible routes before A* scans the
+ # entire neighborhood. Placed barricades still use live collision/attacks.
+ regions.clear();var region_id=0
+ for x in range(-76,76):
+  for z in range(-76,76):
+   var first=Vector2i(x,z)
+   if regions.has(first) or navigation.is_point_solid(first):continue
+   region_id+=1;var pending:Array[Vector2i]=[first];regions[first]=region_id
+   while not pending.is_empty():
+    var cell=pending.pop_back()
+    for offset in [Vector2i.LEFT,Vector2i.RIGHT,Vector2i.UP,Vector2i.DOWN]:
+     var next=cell+offset
+     if navigation.is_in_boundsv(next) and not regions.has(next) and not navigation.is_point_solid(next):regions[next]=region_id;pending.append(next)
 func interior_house(at:Vector3,title:String,safe:bool):
  var visual=game.assets.model("house");add_child(visual);visual.position=at
  collider(at+Vector3(0,.08,0),Vector3(12,.16,10),false)
@@ -133,7 +152,7 @@ func model_bounds(node:Node3D) -> AABB:
 func add_loot(ident:String,kind:String,at:Vector3,amount:int=1):
  if ident in game.state.collected:return
  var root=Node3D.new();add_child(root);root.position=at
- var visual=game.assets.model(kind if kind in ["plant","radio","guitar","chair","table","shelf"] else "crate");root.add_child(visual)
+ var visual=game.assets.model(kind if kind in game.catalog.FURNITURE or kind in game.catalog.WEAPONS else "crate");root.add_child(visual)
  var name=game.catalog.ITEMS[kind].name if game.catalog.ITEMS.has(kind) else kind.capitalize()+" ×"+str(amount)
  label("◇ "+name,at+Vector3(0,1.2,0),Color("e6c884"),22)
  # Label belongs to pickup so it vanishes with it.
@@ -148,6 +167,10 @@ func seed_loot():
  add_loot("table","table",Vector3(17,.1,-5))
  add_loot("guitar","guitar",Vector3(27,.2,-34))
  add_loot("shelf","shelf",Vector3(22,.2,-30))
+ add_loot("shotgun-porch","shotgun",Vector3(-19,.2,0))
+ add_loot("shotgun-shells","shells",Vector3(-19,.1,2),18)
+ add_loot("rifle-supply","rifle",Vector3(25,.2,-32))
+ add_loot("rifle-rounds","rifle_ammo",Vector3(25,.2,-30),90)
  for i in range(16):
   var kind=["wood","scrap","ammo","medkit"][i%4]
   var at=Vector3(-11 if i%2 else 12,.1,16-i*5)
@@ -170,7 +193,8 @@ func route(from:Vector3,to:Vector3) -> PackedVector3Array:
  # Partial searches toward a still-solid destination can scan the whole grid.
  # Wait for a reachable target instead of repeating that work for every zombie.
  if navigation.is_point_solid(last):return result
- for point in navigation.get_point_path(first,last,true):result.append(Vector3(point.x,.2,point.y))
+ if regions.get(first,-1)!=regions.get(last,-2):return result
+ for point in navigation.get_point_path(first,last,false):result.append(Vector3(point.x,.2,point.y))
  return result
 func alert_zombies(at:Vector3,radius:float):
  for zombie in get_tree().get_nodes_in_group("zombies"):

@@ -41,7 +41,7 @@ func configure(owner_game):
  prompt=text("",19,CREAM);prompt.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);prompt.position=Vector2(-350,-95);prompt.size=Vector2(700,40);prompt.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(prompt)
  message=text("",20,GOLD);message.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);message.position=Vector2(-210,140);message.size=Vector2(700,80);message.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;message.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(message)
  placement=text("",18);placement.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT);placement.position=Vector2(-460,-175);placement.size=Vector2(430,145);placement.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(placement)
- var controls=text("B  Build / decorate     E  Interact     H  Heal     F5  Save     Esc  Pause",15,Color("d3d3bd"));controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);controls.position=Vector2(-360,-30);controls.size=Vector2(720,25);controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(controls)
+ var controls=text("B Build  ·  E Interact  ·  V Guns  ·  H Heal  ·  F5 Save  ·  Esc Pause",15,Color("d3d3bd"));controls.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM);controls.position=Vector2(-360,-30);controls.size=Vector2(720,25);controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(controls)
  performance=text("",14);performance.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT);performance.position=Vector2(-350,64);performance.size=Vector2(320,60);performance.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT;hud.add_child(performance)
  reticle=text("·",32,CREAM);reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-20,-20);reticle.size=Vector2(40,40);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hud.add_child(reticle)
  damage=ColorRect.new();damage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);damage.color=Color(.65,.14,.08,0);damage.mouse_filter=Control.MOUSE_FILTER_IGNORE;root.add_child(damage)
@@ -55,7 +55,7 @@ func _process(delta):
  notice_left=maxf(0,notice_left-delta);message.visible=notice_left>0
  if not game.running:return
  health.value=game.state.health;stamina.value=game.player.sprint_energy
- ammo.text="%02d / %03d   ·   HEALTH %d"%[game.state.magazine,int(game.state.inventory.ammo),game.state.health]
+ ammo.text="%s  %02d / %03d   ·   HEALTH %d"%[game.player.profile().name,game.state.magazine,int(game.state.inventory[game.player.profile().ammo]),game.state.health]
  if game.player.reload_left>0:ammo.text="RELOADING…  %.1fs"%game.player.reload_left
  status.text="DAY 01   ·   WOOD %d   SCRAP %d   MED %d"%[game.state.inventory.wood,game.state.inventory.scrap,game.state.inventory.medkit]
  objective.text=game.objective_text()
@@ -68,7 +68,7 @@ func _process(delta):
  reticle.text="×" if game.hit_feedback>0 else ("+" if game.player.aiming else "·")
  damage.color.a=game.damage_feedback*.55
  performance.visible=game.show_performance
- if performance.visible:performance.text="%d FPS  ·  %.2f ms\n%d enemies  ·  %d placed\n%d draws  ·  %d triangles"%[Engine.get_frames_per_second(),Performance.get_monitor(Performance.TIME_PROCESS)*1000,get_tree().get_nodes_in_group("zombies").size(),game.state.objects.size(),Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)]
+ if performance.visible:performance.text="%d FPS  ·  %.2f ms process\n%d enemies  ·  %d placed\n%d draws  ·  %d triangles"%[Engine.get_frames_per_second(),Performance.get_monitor(Performance.TIME_PROCESS)*1000,get_tree().get_nodes_in_group("zombies").size(),game.state.objects.size(),Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)]
 func toast(value:String):
  message.text=value;notice_left=3.0
 func clear_panel():
@@ -91,7 +91,7 @@ func start_screen():
  button("CONTINUE SAVED GAME",game.load_game)
  button("SETTINGS",settings)
  button("QUIT",game.quit_game)
- var help=text("WASD / left stick  move   ·   Mouse / right stick  look\nRMB / LT  aim   ·   LMB / RT  fire   ·   R / X  reload\nE / A  collect   ·   B / Y  build & furnish\nShift / L3  sprint   ·   H / D-pad up  heal",16);panel_content.add_child(help)
+ var help=text("WASD / left stick  move   ·   Mouse / right stick  look\nRMB / LT  aim   ·   LMB / RT  fire   ·   R / X  reload\nE / A  collect   ·   B / Y  build & furnish\nShift / L3  sprint   ·   H / D-pad up  heal\n1–3  select gun   ·   V / D-pad left  cycle guns",16);panel_content.add_child(help)
 func pause():
  open_panel("TAKE A BREATH","Game paused. Essential progress is saved locally.")
  button("RESUME",game.close_overlay).grab_focus()

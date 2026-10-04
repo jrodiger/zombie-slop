@@ -16,6 +16,11 @@ const ITEMS = {
 }
 const FURNITURE = ["plant","radio","guitar","chair","table","shelf"]
 const BUILD = ["foundation","wall","door","barricade","roof","storage"]
-const SUPPLIES = ["wood","scrap","ammo","medkit"]
+const SUPPLIES = ["wood","scrap","ammo","medkit","rifle_ammo","shells"]
+const WEAPONS = {
+ "pistol":{"name":"Pistol","capacity":12,"ammo":"ammo","reload":1.6,"interval":.24,"damage":40,"pellets":1,"spread":0.0,"range":90.0,"recoil":.018},
+ "rifle":{"name":"Rifle","capacity":30,"ammo":"rifle_ammo","reload":2.1,"interval":.11,"damage":26,"pellets":1,"spread":.012,"range":110.0,"recoil":.012},
+ "shotgun":{"name":"Shotgun","capacity":6,"ammo":"shells","reload":2.6,"interval":.85,"damage":18,"pellets":6,"spread":.065,"range":32.0,"recoil":.045},
+}
 static func built(kind:String) -> bool:
  return kind in BUILD
