@@ -3,8 +3,8 @@
   "blender": "4.5.14 LTS",
   "private_repository": "https://github.com/jrodiger/zombie-slop-assets",
   "private_visibility_verified": true,
-  "asset_commit": "b19c6718a1c689e474330b84f37fe36009c851e6",
-  "private_push": "Validated working sources committed and pushed; GitHub acknowledged 7 new LFS objects / 15 MB, with the previous original-source checkpoints retained. Private visibility reverified before upload; no paid overages enabled.",
+  "asset_commit": "6528f4d44d31848a63cef8b204fcf3ad88dc6010",
+  "private_push": "Private visibility reverified before upload. Native-inspected sources checkpointed and pushed as 8f7bdd3 then 6528f4d; GitHub acknowledged 53 LFS objects / 162 MB and the final nine cabinet/house sources / 8.6 MB. Remote main matches the final commit and git lfs fsck passes. Existing checkpoints remain retained. Billing usage API read was attempted but the current token lacks the user scope; no billing settings or paid-overage authorization were changed.",
   "packs": [
     {
       "name": "Kenney City Kit (Suburban)",
@@ -13,16 +13,8 @@
       "license": "CC0-1.0",
       "license_texts": "downloads/suburban/extracted/License.txt and CC0-1.0.txt; copied into workspace/assets/licenses",
       "archive_sha256": "5869c35cf30b1c87bdb2d197b6d325eebadd2ef08ea27f04797e8e08d77a9a39",
-      "files_used": [
-        "Models/GLB format/building-type-a.glb",
-        "Models/GLB format/building-type-c.glb",
-        "Models/GLB format/building-type-e.glb",
-        "Models/GLB format/building-type-h.glb",
-        "Models/GLB format/building-type-k.glb",
-        "Models/GLB format/building-type-n.glb",
-        "Models/GLB format/Textures/colormap.png"
-      ],
-      "treatment": "Uniform 3.4 scale, world transforms defined in game/world.gd; pristine source remains unchanged."
+      "files_used": [],
+      "treatment": "Pristine historical pack retained externally. Closed shells and their loose textures are no longer assembled or rendered; original editable bungalows replace them."
     },
     {
       "name": "Quaternius Zombie Apocalypse Kit",
@@ -54,9 +46,12 @@
         "Weapons/Blends/Shotgun.blend",
         "Vehicles/Blends/Vehicle_Pickup.blend",
         "Environment/Blends/Chest.blend",
-        "Zombie_Atlas.png"
+        "Zombie_Atlas.png",
+        "Environment/Blends/Couch.blend",
+        "Environment/Blends/FireHydrant.blend",
+        "Environment/Blends/TrashBag_1.blend"
       ],
-      "treatment": "Editable CC0 working copies under private quaternius/. Survivor keeps author Middle1.L attachments for three switchable guns; barrel endpoints fitted against standalone geometry. Original gun locomotion reused; same-rig Aim/Shoot/Reload actions added. Zombie eyelids/body joined into one atlas skin; Punch copied to Attack. Rig scale 1.15. Props matched to collision footprints. Blender constraints sampled and baked in explicit GLB exports. Reproduce with scripts/adapt_quaternius.py --export-only. Pristine files are hash-checked and never saved over."
+      "treatment": "Private editable CC0 copies. Matt and all original clips are mirrored to right-handed use; authored bone names are retained. Twelve rifle/shotgun same-rig actions bake primary wrist orientation and a separately sampled support-arm IK target, avoiding armature dependency cycles. Support hands hold foregrips during idle, walk, run, aim and shooting; reload releases the support hand. No cross-rig retargeting. Original source clips, Zombie Basic atlas skin, author sockets and muzzle points are preserved. Re-export matching sources without modification using adapt_quaternius.py and prepare_neighborhood_assets.py --export-only."
     },
     {
       "name": "Quaternius Survival Pack",
@@ -74,7 +69,17 @@
         "Pistol_1.blend",
         "Bandages.blend"
       ],
-      "status": "Not downloaded: Google Drive quota exceeded. Expected location downloads/survival."
+      "status": "Installed from full user-provided archive; pristine originals, CC0 license and checksums retained externally.",
+      "archive_sha256": "8468c7a85f42fd8fb1f08de58dfed91ab79f9c957e2afb6c82f7eb3ff8b39414",
+      "files_used": [
+        "Blends/Radio.blend",
+        "Blends/FirstAidKit.blend",
+        "Blends/Bandages.blend",
+        "Blends/WaterBottle_1.blend",
+        "Blends/Trashcan.blend",
+        "Blends/GasCan.blend"
+      ],
+      "treatment": "Private normalized working props, materials retained. Radio is a collectible interior furnishing; bottle/trashcan decorate homes. Medical and gascan derivatives are prepared but not rendered as loose supply pickups."
     },
     {
       "name": "Quaternius Ultimate Nature Pack",
@@ -91,23 +96,101 @@
         "BirchTree_1.blend",
         "Bush_1.blend"
       ],
-      "status": "Not downloaded: Google Drive quota exceeded. Expected location downloads/nature."
+      "status": "Installed from full user-provided archive; pristine originals, CC0 license and checksums retained externally.",
+      "archive_sha256": "b1dfb9e9adffc384586de46a4fda2da4f95a7c9d587154f82607a540d0cef543",
+      "files_used": [
+        "Blends/CommonTree_1.blend",
+        "Blends/BirchTree_2.blend",
+        "Blends/CommonTree_Dead_3.blend",
+        "Blends/Bush_1.blend",
+        "Blends/Grass_Short.blend",
+        "Blends/Rock_Moss_3.blend"
+      ],
+      "treatment": "Private dimensioned working sources with intact materials, rendered as six MultiMesh vegetation/rock sets. Pristine source hashes are checked during adaptation."
     },
     {
       "name": "ITHappy Apocalypse Free",
       "version": "1.1 (2026-09-09)",
       "source": "https://ithappystudios.com/free/apocalypse-free/",
       "license_source": "https://ithappystudios.com/type-of-licenses/",
-      "status": "Not downloaded: requires authenticated account checkout and verification/preservation of full free-usage license. No ITHappy characters used or asset upload performed. Expected location downloads/ithappy."
+      "status": "Installed from the user-provided Apocalypse_Free.blend; all eight image textures are packed. Only non-character props are selected.",
+      "source_sha256": "4c13ab4842411ef7d9f998c179daab6cec03a45d55ae2bbbbf2a28ff9769a74b",
+      "files_used": [
+        "Back_Guitar",
+        "Road_Barrier_01",
+        "Barbecue_Grill",
+        "Potbelly_Stove_01",
+        "Signs_Shield",
+        "Apocalypse_Car* mesh parts"
+      ],
+      "license": "ITHappy free asset usage policy and one-time purchase licence agreement; separate from MIT",
+      "license_urls": [
+        "https://ithappystudios.com/free-asset-usage-policy/",
+        "https://ithappystudios.com/one-time-purchase-licence-agreement/"
+      ],
+      "license_evidence": "Full official policy/agreement text preserved with the pristine download and private neighborhood/licenses. Internal working copies/backup only; final-game derivatives remain local, with no public standalone assets.",
+      "treatment": "Selected mesh transforms retained on detach, fitted to physical dimensions and saved privately. Packed Color2 atlas connected to a rough portable PBR material; original complex dirt/blood mixing is simplified. No ITHappy characters are used. No generative-image tool receives these assets."
+    },
+    {
+      "name": "Recorded CC0 sound effects",
+      "sources": [
+        "https://opengameart.org/content/gunshots",
+        "https://opengameart.org/content/gun-reload-sounds",
+        "https://kenney.nl/assets/impact-sounds"
+      ],
+      "authors": [
+        "kurt",
+        "SpringySpringo",
+        "Kenney"
+      ],
+      "license": "CC0-1.0",
+      "originals": [
+        {
+          "file": "pistol-original.wav",
+          "url": "https://opengameart.org/sites/default/files/22%20Pistol.wav",
+          "sha256": "32f12645134c1d8716f84ea984677ba0ae2cceab5fbc7db736c7754c3a9f4ebb"
+        },
+        {
+          "file": "rifle-original.wav",
+          "url": "https://opengameart.org/sites/default/files/22%20Magnum.wav",
+          "sha256": "132a491a1e52c30042cac867ff461fc895c1a31b5420dfff24f5af0f2185d5cc"
+        },
+        {
+          "file": "shotgun-original.wav",
+          "url": "https://opengameart.org/sites/default/files/Black%20Powder.wav",
+          "sha256": "495eadf1c1e41a1264ff75f08a58de9004b3f9792391a174d70fc5c796c41744"
+        },
+        {
+          "file": "pistol-reload.wav",
+          "url": "https://opengameart.org/sites/default/files/gunreload1.wav",
+          "sha256": "685cac6a184e3cc3ec09a25b6ddb1d6feffd86d469778f339aa423d384035c50"
+        },
+        {
+          "file": "rifle-reload.wav",
+          "url": "https://opengameart.org/sites/default/files/assaultriflereload1_0.wav",
+          "sha256": "efb2d724d634eabe6ba8d3065686abca848bb7497d4d43a5e4aed5e5ea23016f"
+        },
+        {
+          "file": "shotgun-reload.wav",
+          "url": "https://opengameart.org/sites/default/files/shotguncock_0.wav",
+          "sha256": "33e007321ba83301c861aef573f2c40b70bc62f8f24c0164877e6dd123e24371"
+        },
+        {
+          "file": "kenney_impact-sounds.zip",
+          "url": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+          "sha256": "029d734af1582474edf3a694d1b0cebc97c1c152f2f39fa34d4c2bafc5de77f8"
+        }
+      ],
+      "treatment": "Recorded firearm shots trimmed at their first transient and normalized below clipping. Recorded reloads and Kenney impacts/footsteps decoded to 44100Hz mono PCM; nine footsteps provide three variations for grass, road and wood. Pristine recordings are retained; private audio_recipe.json has source and derivative hashes."
     }
   ],
   "original_assets": {
     "author": "Zombie Slop project / Jonathan Rodiger",
     "license": "All rights reserved; separate from MIT code",
-    "editable_sources": "Sibling private checkout: 21 .blend files + recipe.json. Character rigs contain named hand.R socket and eight clips: Idle, Walk, Run, Aim, Shoot, Reload, Attack, Death. Original pistol is attached at runtime; original clips avoid cross-rig retargeting.",
+    "editable_sources": "Original 21 sources remain checkpointed; nine new original neighborhood house/interior sources add four bungalow palettes, pitched roofs, window openings, porches, room partitions and furniture pivots. Private neighborhood directory also contains 21 adapted pack props.",
     "generator": "scripts/create_assets.py",
     "export": "Blender background explicit Y-up GLB, action export, mesh joining for runtime surfaces; swinging DoorPivot stays separate. Outputs regenerated to external generated/ folder. Generator refuses existing editable sources unless --replace-existing is explicit; --only zombie permits a focused checkpoint repair. Existing private sources are reproducibly exported without saving changes by scripts/export_assets.py; every source hash is checked.",
-    "audio": "Seven original deterministic PCM effects/ambient clips, 22050Hz mono; generator seed 7 and editable synthesis parameters. No downloaded audio/font assets.",
+    "audio": "Quiet original 24-second filtered-noise wind, seed 4815. Previous original synthetic effects remain reproducible from the first checkpoint but recorded CC0 effects replace them in runtime.",
     "files": [
       "survivor",
       "zombie",
@@ -131,7 +214,7 @@
       "pistol",
       "crate"
     ],
-    "limitations": "Original temporary survivor/zombie/pistol/car/storage remain checkpointed for restoration; runtime now uses the Quaternius replacements. Original construction, furniture and vegetation remain where other requested packs are unavailable."
+    "limitations": "Original temporary characters and environment sources remain preserved for restoration. Runtime uses pack characters, guns and vegetation plus original accessible homes/construction. ITHappy complex dirt/blood shader mixing is simplified for glTF portability. Prepared small medical/supply props are not all rendered."
   },
   "public_asset_files": []
 }

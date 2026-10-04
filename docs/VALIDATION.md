@@ -1,4 +1,44 @@
-# Prototype validation
+# Current validation — iteration three
+
+Local target: Apple M3 MacBook Air, 16 GB, Godot 4.7.2 Mobile / Metal at 1280×800. Default settings retain the 60 FPS cap, VSync and shadows off. Steam Deck and physical controller feel remain unverified.
+
+**87 source checks and 141 native exported graphical checks pass.** New coverage includes right-handed pistol use, right firing-hand position and support-hand/foregrip proximity on ten rifle/shotgun locomotion/aim/fire poses plus separate reload poses, held-sprint exhaustion/recovery, wheel and Shift-wheel rotation, snapped 90-degree wheel/keyboard rotation, reachability of all six collectible furnishings, fourteen accessible homes and 42 searchable containers, real contents-menu pickup callbacks, idempotent stock collection, wall/glass line of sight, food consumption without waste, partial/full container persistence, gradual zombie replacement and the eighteen-live-enemy cap. Version-one and version-two progress migrate without losing weapons or base arrangements. Actual combat, step-up traversal, floor/table/shelf building, spending/refunds and storage continue to pass. The exported app exited without runtime errors.
+
+The supporting hand is sampled through an independent world-space target before baking; a same-armature target dependency and an incomplete selected-bones bake were caught and repaired by graphical pose tests. Matching editable sources retain the author clips, right-handed rig transform, gun sockets and twelve new long-gun actions. The colored house material values are converted from the intended sRGB palette into linear PBR values; source/collision axis alignment and porch support were verified through actual movement/placement.
+
+The larger 248m neighborhood contains fourteen furnished bungalows with pitched roofs, window openings/glass, room partitions, porches and paths. Roofs hide while the player is indoors. New home fixtures yield to saved player placements. Supplies are in drawers/fridges/safes, and selected furnishings remain recoverable interior objects. Floating world labels and roadside supply crates are removed; mounted number plates identify houses. Nature/Survival and selected non-character ITHappy props are integrated. Recorded CC0 shots/reloads and varied surface footsteps replace synthetic effects. No purchased capacity, public assets or CI binary artifacts are used.
+
+The existing user saves were copied to the external pre-iteration-three backup folder. Integration and performance modes use separate save files. Earlier playable apps and original/pristine asset downloads remain preserved. Private editable assets and license evidence are checkpointed separately; see ASSETS.json for the matching revision and upload evidence.
+
+PR #2 was explicitly approved for merge by the user and squash-merged as `ef4b378f59b3c18976d9a8054a74748c83e54eba`. That override does not automatically apply to the next PR. The new PR remains subject to the current-head review/check gate described below.
+
+The earlier measurements below are historical results on smaller maps, not performance claims for this iteration.
+
+## Iteration-three sustained performance
+
+The exported native Metal build completed **600.001 seconds** at **1280×800**, with the **60 FPS cap and VSync on, shadows off**, **18 living zombies throughout every section**, and **50 placed objects**. No other graphical game/test was run concurrently.
+
+- Average: **59.97 FPS**; p50/p95/p99: **16.682 / 18.099 / 18.996 ms**.
+- **1% low: 50.27 FPS**; maximum **29.282 ms**.
+- **95 / 35,984 frames exceeded 20 ms; zero exceeded 33.333 ms**.
+- 18,362 frames exceeded the literal 16.667 ms threshold. A capped refresh-paced run has timing jitter around that boundary; the result demonstrates near-60 pacing with brief dips, **not perfectly sustained 60 FPS**.
+
+| Scene (100 seconds total, repeated in two laps) | Average FPS | p99 ms | 1% low FPS |
+|---|---:|---:|---:|
+| Street traversal | 59.98 | 18.370 | 53.01 |
+| Populated supply view | 59.97 | 19.219 | 50.93 |
+| Interior | 59.97 | 18.390 | 53.15 |
+| Shooting encounter | 59.97 | 19.191 | 50.62 |
+| 50-piece furnished base | 59.97 | 20.075 | 45.88 |
+| Placement preview | 59.97 | 18.452 | 52.73 |
+
+The furnished base has the weakest frame-time tail. Its sampled physics median was 4.43 ms, with an 11.03 ms maximum; median draws were 81. Populated-view physics median was 4.64 ms. Process-monitor values include refresh/presentation pacing and cannot be treated as isolated CPU cost. Instanced terrain/vegetation, static settled items, staggered AI and offscreen animation culling keep the expanded scene within the current prototype budget. The next performance priority is the furnished-base/AI physics tail. The run does not establish Steam Deck performance. Subsequent review fixes moved one chair out of a counter collider, repaired snapped preview rotation and strengthened asset-tool diagnostics. The long run predates that chair relocation; the final app is covered by the integration/relaunch checks.
+
+A final 60-second exported check after the review fixes measured **59.98 FPS**, p95/p99 **18.094 / 18.920 ms**, **1% low 50.41 FPS**, maximum **23.535 ms**, and **zero frames above 33.333 ms**. Its separate report is under `verification/iteration3-final-check/`; the ten-minute report is preserved.
+
+The final scene also passed **141 exported graphical integration checks**, followed by **six fresh-process quit/relaunch checks**, without runtime errors. Reports/screenshots remain outside both repositories under external `verification/iteration3/`. Desktop tools additionally verified the native New Neighborhood click and Escape pause input; this is direct automated desktop interaction, not physical controller coverage. A direct-test autosave was restored from the pre-test backup and byte-verified. The new `--manual-test` flag isolates future manual saves and prevents preference writes.
+
+# Prior iteration validation
 
 Local target: 13-inch MacBook Air, Apple M3 (8 CPU / 10 GPU cores), 16 GB RAM. Godot 4.7.2. Iteration one used Compatibility OpenGL 4.1; iteration two uses Mobile / native Metal on macOS after the comparisons below. Other platforms retain Compatibility. No hardware serial identifiers are retained here.
 

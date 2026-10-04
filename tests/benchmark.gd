@@ -49,6 +49,10 @@ func run(owner_game):
    game.player.reset_physics_interpolation()
    print("BENCHMARK STAGE ",STAGES[stage]," at ",int(elapsed),"s")
   if game.state.health<100:game.state.health=100
+  # Keep the stress population alive throughout the measurement, including
+  # shooting sections; normal gameplay damage and respawning remain unchanged.
+  for enemy in get_tree().get_nodes_in_group("zombies"):
+   if enemy.alive:enemy.hp=10000
   # Camera motion and bounded real movement exercise traversal; reset each lap.
   if stage==0:
    Input.action_press("forward")

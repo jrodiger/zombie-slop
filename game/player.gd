@@ -8,6 +8,8 @@ var camera:Camera3D
 var yaw:float=0.0
 var pitch:float=-.18
 var sprint_energy:float=100.0
+var sprint_exhausted:bool=false
+var sprinting:bool=false
 var aiming:bool=false
 var reload_left:float=0.0
 var shot_cooldown:float=0.0
@@ -47,9 +49,12 @@ func _physics_process(delta):
  aiming=Input.is_action_pressed("aim") and game.placement_kind==""
  var move=Input.get_vector("left","right","forward","back")
  var direction=Basis(Vector3.UP,yaw)*Vector3(move.x,0,move.y)
- var sprint=Input.is_action_pressed("sprint") and not aiming and sprint_energy>1 and move.length()>.1
- var speed=7.2 if sprint else (2.9 if aiming else 4.2)
- sprint_energy=clampf(sprint_energy+(-24 if sprint else 18)*delta,0,100)
+ var wants_sprint=Input.is_action_pressed("sprint")
+ if sprint_exhausted and not wants_sprint and sprint_energy>=25:sprint_exhausted=false
+ sprinting=wants_sprint and not sprint_exhausted and not aiming and sprint_energy>0 and move.length()>.1 and game.placement_kind==""
+ sprint_energy=clampf(sprint_energy+(-24 if sprinting else 18)*delta,0,100)
+ if sprinting and sprint_energy<=0:sprint_exhausted=true;sprinting=false
+ var speed=7.2 if sprinting else (2.9 if aiming else 4.2)
  velocity.x=move_toward(velocity.x,direction.x*speed,delta*22);velocity.z=move_toward(velocity.z,direction.z*speed,delta*22)
  if not is_on_floor():velocity.y-=20*delta
  elif Input.is_action_just_pressed("jump") and game.placement_kind=="":velocity.y=6
@@ -69,13 +74,18 @@ func _physics_process(delta):
  if Input.is_action_just_pressed("reload") and game.placement_kind=="":reload()
  if Input.is_action_pressed("fire") and game.placement_kind=="":shoot()
  if Input.is_action_just_pressed("heal") and game.placement_kind=="":heal()
- if reload_left>0:game.assets.animate(animation,"Reload",.08,false)
- elif firing_left>0:game.assets.animate(animation,"Shoot",.03,false)
- elif move.length()>.1:game.assets.animate(animation,"Run_Gun" if sprint else "Walk_Gun",.12)
- else:game.assets.animate(animation,"Aim" if aiming else "Idle_Gun")
+ if reload_left>0:game.assets.animate(animation,weapon_clip("Reload"),.08,false)
+ elif firing_left>0:game.assets.animate(animation,weapon_clip("Shoot"),.03,false)
+ elif move.length()>.1:game.assets.animate(animation,weapon_clip("Run_Gun" if sprinting else "Walk_Gun"),.18)
+ else:game.assets.animate(animation,weapon_clip("Aim" if aiming else "Idle_Gun"),.18)
  if move.length()>.1 and is_on_floor():
   step_time-=delta
-  if step_time<=0:game.sound("step",.3);step_time=.27 if sprint else .44
+  if step_time<=0:
+   var step=game.world.footstep(global_position);var variant=randi_range(0,2)
+   game.sound(step+("" if variant==0 else "-"+str(variant)),.38);step_time=.27 if sprinting else .44
+func weapon_clip(clip:String) -> String:
+ if game.state.equipped=="pistol":return clip
+ return clip.replace("_Gun","")+"_"+game.state.equipped.capitalize()
 func _process(delta):
  if game==null or camera==null or not game.running or game.overlay:return
  # Independent camera follows the rendered body pose without inheriting its
@@ -112,14 +122,14 @@ func reload():
  var weapon=profile()
  if reload_left>0 or game.state.magazine>=int(weapon.capacity):return
  if int(game.state.inventory[weapon.ammo])<=0:game.toast("No reserve ammunition");return
- reload_left=float(weapon.reload);game.sound("reload");game.toast("Reloading…")
+ reload_left=float(weapon.reload);game.sound("reload-"+game.state.equipped,.7);game.toast("Reloading…")
 func shoot():
  if reload_left>0 or shot_cooldown>0:return
  if game.state.magazine<=0:game.toast("Empty magazine — reload");shot_cooldown=.4;return
  var weapon=profile()
  game.state.magazine-=1;shot_cooldown=float(weapon.interval);recoil=float(weapon.recoil)
  flash_left=.05;firing_left=.14;flash.visible=true
- game.sound("shot");game.world.alert_zombies(global_position,32)
+ game.sound("shot-"+game.state.equipped,.8);game.world.alert_zombies(global_position,32)
  var origin=camera.global_position
  for pellet in range(int(weapon.pellets)):
   var spread=float(weapon.spread)*(.55 if aiming else 1.0)
@@ -135,8 +145,14 @@ func shoot():
    game.impact(hit.position)
 func heal():
  if game.state.health>=100:game.toast("Already at full health");return
- if int(game.state.inventory.medkit)<=0:game.toast("No medkits");return
- game.state.inventory.medkit-=1;game.state.health=minf(100,game.state.health+45);game.sound("pickup");game.toast("Health restored +45")
+ for kind in ["medkit","food","water"]:
+  if int(game.state.inventory[kind])>0:use_supply(kind);return
+ game.toast("Find medical supplies, food or water")
+func use_supply(kind:String):
+ if game.state.health>=100 or kind not in ["medkit","food","water"] or int(game.state.inventory[kind])<=0:return
+ game.state.inventory[kind]-=1
+ var amount=45 if kind=="medkit" else (15 if kind=="food" else 8)
+ game.state.health=minf(100,game.state.health+amount);game.sound("pickup",.4);game.toast("Used "+kind.capitalize()+" · health +"+str(amount))
 func take_damage(amount:float):
  if hurt_left>0 or not game.running:return
  hurt_left=.6;game.state.health=maxf(0,game.state.health-amount);game.sound("hurt");game.damage_feedback=.45

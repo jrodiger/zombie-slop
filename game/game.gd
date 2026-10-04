@@ -29,10 +29,13 @@ var damage_feedback:float=0
 var hit_feedback:float=0
 var autosave_left:float=60
 var sound_players:Array=[]
+var sound_cache:Dictionary={}
 var sound_index:int=0
 var ambience:AudioStreamPlayer
 var completed_announced:bool=false
+var open_container_id:String=""
 func _ready():
+ if "--manual-test" in OS.get_cmdline_user_args():save_path="user://manual-test-survival.json"
  if "--integration" in OS.get_cmdline_user_args() or "--verify-load" in OS.get_cmdline_user_args():save_path="user://integration-survival.json"
  if "--benchmark" in OS.get_cmdline_user_args():save_path="user://benchmark-survival.json"
  inputs();load_settings();create_world()
@@ -98,16 +101,19 @@ func _unhandled_input(event):
  if placement_kind!="":
   if event.is_action_pressed("cancel"):cancel_placement();return
   if event.is_action_pressed("confirm"):confirm_placement();return
-  if event.is_action_pressed("rotate_left"):placement_yaw-=PI/12
-  if event.is_action_pressed("rotate_right"):placement_yaw+=PI/12
+  var rotation_step=PI/2 if snap and catalog.built(placement_kind) else PI/12
+  if event.is_action_pressed("rotate_left"):placement_yaw-=rotation_step
+  if event.is_action_pressed("rotate_right"):placement_yaw+=rotation_step
   if event.is_action_pressed("height_up"):placement_height+=.1
   if event.is_action_pressed("height_down"):placement_height-=.1
   if event.is_action_pressed("distance_up"):placement_distance=minf(8,placement_distance+.25)
   if event.is_action_pressed("distance_down"):placement_distance=maxf(1.5,placement_distance-.25)
   if event.is_action_pressed("snap"):snap=not snap
   if event is InputEventMouseButton:
-   if event.button_index==MOUSE_BUTTON_WHEEL_UP:placement_distance=minf(8,placement_distance+.25)
-   if event.button_index==MOUSE_BUTTON_WHEEL_DOWN:placement_distance=maxf(1.5,placement_distance-.25)
+   if event.pressed:
+    var increment=rotation_step if snap and catalog.built(placement_kind) else deg_to_rad(5 if event.shift_pressed else 15)
+    if event.button_index==MOUSE_BUTTON_WHEEL_UP:placement_yaw+=increment
+    if event.button_index==MOUSE_BUTTON_WHEEL_DOWN:placement_yaw-=increment
   return
  if event.is_action_pressed("pause"):ui.pause()
  if event.is_action_pressed("build"):ui.build_menu()
@@ -126,7 +132,7 @@ func _process(delta):
  autosave_left-=delta
  if autosave_left<=0 and placement_kind=="":autosave_left=60;save_game(false)
 func new_game():
- state.reset();completed_announced=false;rebuild();running=true;close_overlay();toast("Find wood and scrap on the porch, then bring home the fern by the street.")
+ state.reset();completed_announced=false;rebuild();running=true;close_overlay();toast("Search your kitchen drawers for materials. Bring home furnishings from the neighborhood.")
 func rebuild():
  cancel_placement()
  if is_instance_valid(world):remove_child(world);world.queue_free()
@@ -138,9 +144,11 @@ func rebuild():
  player.reset_physics_interpolation()
  # Detect corrupt/obsolete locations or placement intersecting the capsule.
  var q=PhysicsShapeQueryParameters3D.new();q.shape=player.get_child(0).shape;q.transform=Transform3D(Basis(),player.position+Vector3.UP*.9);q.collision_mask=1
- if player.position.y<-.5 or player.position.y>8 or absf(player.position.x)>72 or absf(player.position.z)>72 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
+ if player.position.y<-.5 or player.position.y>8 or absf(player.position.x)>120 or absf(player.position.z)>120 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
  apply_settings()
 func close_overlay():
+ open_container_id=""
+ world.close_containers()
  ui.clear_panel();overlay=false
  if running:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
 func die():
@@ -162,6 +170,7 @@ func load_game():
  state.settings=preferences
  var notice=state.save_error;rebuild();running=true;close_overlay();toast("Welcome home" if notice=="" else notice)
 func save_settings():
+ if "--manual-test" in OS.get_cmdline_user_args():return
  var config=ConfigFile.new()
  for key in state.settings:config.set_value("settings",key,state.settings[key])
  config.save("user://settings.cfg")
@@ -186,7 +195,8 @@ func toast(value:String):
  if ui!=null:ui.toast(value)
 func sound(name:String,volume:float=1):
  if sound_players.is_empty():return
- var s=sound_players[sound_index%sound_players.size()];sound_index+=1;s.stream=load("res://assets/"+name+".wav");s.volume_db=linear_to_db(maxf(.001,volume));s.play()
+ if not sound_cache.has(name):sound_cache[name]=load("res://assets/"+name+".wav")
+ var s=sound_players[sound_index%sound_players.size()];sound_index+=1;s.stream=sound_cache[name];s.volume_db=linear_to_db(maxf(.001,volume));s.play()
 func impact(at:Vector3):
  var mesh=MeshInstance3D.new();var sphere=SphereMesh.new();sphere.radius=.045;sphere.height=.09;mesh.mesh=sphere;var material=StandardMaterial3D.new();material.albedo_color=Color("e4ba70");material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;mesh.material_override=material;add_child(mesh);mesh.position=at
  get_tree().create_timer(.13).timeout.connect(mesh.queue_free)
@@ -200,6 +210,8 @@ func interaction_prompt() -> String:
  if placement_kind!="":return "" if placement_valid else placement_reason
  var loot=world.nearest_loot(player.global_position)
  if loot!=null:return "E / A  ·  Take "+(catalog.ITEMS[loot.kind].name if catalog.ITEMS.has(loot.kind) else loot.kind.capitalize()+" ×"+str(loot.amount))
+ var container=world.nearest_container(player.global_position)
+ if container!=null:return "E / A  ·  Search "+container.title+("  (empty)" if world.container_items(container).is_empty() else "")
  var piece=nearest_piece()
  if piece!=null:
   var name=catalog.ITEMS[piece.data.kind].name
@@ -212,10 +224,24 @@ func interact():
    loot.node.queue_free();sound("pickup");toast("Collected "+loot.kind.capitalize()+" ×"+str(loot.amount))
    if loot.kind in catalog.WEAPONS:player.equip(loot.kind)
   return
+ var container=world.nearest_container(player.global_position)
+ if container!=null:
+  open_container_id=container.id;world.search_container(container);ui.loot_menu(container);return
  var piece=nearest_piece()
  if piece==null:return
  if piece.data.kind=="door":piece.toggle()
  if piece.data.kind=="storage":ui.storage_menu(int(piece.data.id))
+func take_container_item(ident:String,item_id:String) -> bool:
+ if not running or not overlay or ident!=open_container_id:return false
+ var entry=world.nearest_container(player.global_position)
+ if entry==null or entry.id!=ident:return false
+ for item in world.container_items(entry):
+  if item.id!=item_id:continue
+  if not state.collect(item.id,item.kind,int(item.amount)):return false
+  sound("pickup",.45)
+  if item.kind in catalog.WEAPONS:player.equip(item.kind)
+  toast("Collected "+item.kind.capitalize()+" ×"+str(item.amount));return true
+ return false
 func move_nearest():
  var piece=nearest_piece()
  if piece==null:return
@@ -256,11 +282,12 @@ func update_placement():
  var origin=player.camera.global_position;var endpoint=origin-player.camera.global_basis.z*12
  var ray=PhysicsRayQueryParameters3D.create(origin,endpoint,1,excluded)
  var hit=get_world_3d().direct_space_state.intersect_ray(ray)
- if not hit.is_empty() and hit.normal.y>.65 and player.global_position.distance_to(hit.position)<placement_distance+1:
+ var surface_target=not hit.is_empty() and hit.normal.y>.65 and player.global_position.distance_to(hit.position)<9
+ if surface_target:
   horizontal=hit.position
  var down=PhysicsRayQueryParameters3D.create(Vector3(horizontal.x,horizontal.y+3,horizontal.z),Vector3(horizontal.x,horizontal.y-4,horizontal.z),1,excluded)
  # If the reticle hits a shelf/table, preserve the selected level rather than the highest shelf.
- if not hit.is_empty() and hit.normal.y>.65:down.from=hit.position+Vector3.UP*.06
+ if surface_target:down.from=hit.position+Vector3.UP*.06
  var support=get_world_3d().direct_space_state.intersect_ray(down)
  var bottom=float(support.position.y)+.015 if not support.is_empty() else 0.0
  placement_position=Vector3(horizontal.x,bottom+placement_height,horizontal.z)
@@ -320,7 +347,7 @@ func objective_complete() -> bool:
  return true
 func objective_text() -> String:
  var o=state.objective
- if not o.supplies:return "01  /  Collect wood and scrap on the porch."
+ if not o.supplies:return "01  /  Search your kitchen drawers for wood and scrap."
  if not o.collectible:return "02  /  Bring home the fern near the street."
  if not o.returned:return "03  /  Return to HOME with your finds."
  if not o.decorated:return "04  /  B / Y → choose your object and place it."
@@ -331,7 +358,7 @@ func heading() -> String:
  return directions[posmod(roundi(player.yaw/(PI/4)),8)]
 func integration():
  var script=load("res://tests/integration.gd").new();add_child(script);var code=await script.run(self)
- script.queue_free();await get_tree().process_frame;finish_run(code)
+ script.queue_free();await get_tree().process_frame;finish_run(1 if code==null else int(code))
 func benchmark():
  var script=load("res://tests/benchmark.gd").new();add_child(script);await script.run(self)
  script.queue_free();await get_tree().process_frame;finish_run()
