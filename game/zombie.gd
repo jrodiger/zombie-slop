@@ -21,7 +21,7 @@ func configure(owner_game,spawn:Vector3,index:int):
  game=owner_game;floor_snap_length=.25;position=spawn;origin=spawn;destination=spawn;think_left=float(index)*.043;collision_layer=4;collision_mask=1
  variant=["zombie","zombie","zombie-chubby","zombie-arm","zombie-ribcage"][index%5]
  max_hp=220 if variant=="zombie-chubby" else (70 if variant=="zombie-ribcage" else (130 if variant=="zombie-arm" else 100));hp=max_hp
- chase_speed=1.7 if variant=="zombie-chubby" else (2.7 if variant=="zombie-arm" else 2.15);attack_damage=22 if variant=="zombie-chubby" else 12
+ chase_speed=1.9 if variant=="zombie-chubby" else (3.15 if variant=="zombie-ribcage" else (2.7 if variant=="zombie-arm" else 2.15));attack_damage=4 if variant=="zombie-ribcage" else (22 if variant=="zombie-chubby" else 12)
  var shape=CapsuleShape3D.new();shape.radius=.48 if variant=="zombie-chubby" else .34;shape.height=1.95 if variant=="zombie-chubby" else (1.05 if variant=="zombie-ribcage" else 1.75)
  var collider=CollisionShape3D.new();collider.shape=shape;collider.position.y=shape.height/2+.025;add_child(collider)
  visual=game.assets.model(variant);add_child(visual);animation=game.assets.animation(visual);add_to_group("zombies")
@@ -29,6 +29,7 @@ func configure(owner_game,spawn:Vector3,index:int):
  # notifier follows the capsule and resumes the current clip when visible.
  var visibility=VisibleOnScreenNotifier3D.new();visibility.aabb=AABB(Vector3(-1,-.1,-1),Vector3(2,2.2,2));add_child(visibility)
  if animation!=null:
+  game.assets.animate(animation,"Idle",0);animation.seek(.1,true)
   animation.active=false
   visibility.screen_entered.connect(func():animation.active=true)
   visibility.screen_exited.connect(func():animation.active=false)

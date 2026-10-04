@@ -167,7 +167,7 @@ func rebuild():
  # Detect corrupt/obsolete locations or placement intersecting the capsule.
  var q=PhysicsShapeQueryParameters3D.new();q.shape=player.get_child(0).shape;q.transform=Transform3D(Basis(),player.position+Vector3.UP*.9);q.collision_mask=1
  var ground=world.ground_height(player.position.x,player.position.z)
- if player.position.y<ground-.4 or player.position.y>ground+9 or absf(player.position.x)>120 or absf(player.position.z)>120 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
+ if player.position.y<ground-.4 or player.position.y>ground+9 or absf(player.position.x)>world.LIMIT-1 or absf(player.position.z)>world.LIMIT-1 or not get_world_3d().direct_space_state.intersect_shape(q,1).is_empty():recover_player()
  apply_settings()
 func close_overlay():
  open_container_id="";inventory_open=false
@@ -242,7 +242,7 @@ func interaction_prompt() -> String:
  if loot!=null and (container==null or interaction_distance(loot,false)<interaction_distance(container,true)):return "E / A  ·  Take "+(catalog.ITEMS[loot.kind].name if catalog.ITEMS.has(loot.kind) else loot.kind.capitalize()+" ×"+str(loot.amount))
  if container!=null:return "E / A  ·  Search "+container.title+("  (empty)" if world.container_items(container).is_empty() else "")
  var car=world.nearest_vehicle(player.global_position)
- if car!=null:return "E / A  ·  Drive "+car.kind.replace("car-","").replace("-"," ").capitalize()
+ if car!=null:return "E / A  ·  Drive "+("Pickup" if car.base_kind=="car" else car.base_kind.replace("car-","").capitalize())+("  ·  Armored" if car.armored else "  ·  Tab to fit armor")
  var piece=nearest_piece()
  if piece!=null:
   var name=catalog.ITEMS[piece.data.kind].name

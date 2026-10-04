@@ -79,10 +79,19 @@ func _initialize():
  var legacy_extra=v3.duplicate(true);legacy_extra.character={};legacy_extra.loot_seed="bad";legacy_extra.vehicles="bad"
  check(v4.restore(legacy_extra) and v4.character=="matt" and v4.loot_seed==4815 and v4.vehicles.is_empty(),"Legacy migration ignores unvalidated fields from future versions")
  check(v4.objects==gun_save.objects and v4.weapons==gun_save.weapons,"Migration keeps base and weapons")
- v4.character="lis";v4.vehicles={"parked-1":{"position":[5.0,.2,8.0],"yaw":.5}};v4.loot_seed=2147483646
+ v4.character="lis";v4.vehicles={"parked-1":{"position":[5.0,.2,8.0],"yaw":.5,"armored":false}};v4.loot_seed=2147483646
  var json_state=State.parse_json(JSON.stringify(v4.snapshot(),"",true,true));var from_json=State.new()
  check(from_json.restore(json_state) and from_json.snapshot()==v4.snapshot(),"JSON roundtrip preserves character, seed and parked car transform")
  var bad_seed=v4.snapshot();bad_seed.loot_seed=1.25;check(not State.validate(bad_seed),"Fractional world seed rejected")
+ var old_four=v4.snapshot();old_four.version=4;old_four.inventory.erase("vehicle_parts");old_four.vehicles["parked-1"].erase("armored")
+ var migrated_four=State.new();check(migrated_four.restore(old_four) and migrated_four.character=="lis" and migrated_four.inventory.vehicle_parts==0 and not migrated_four.vehicles["parked-1"].armored,"Version-four save retains survivor and parked car, adding empty parts and unarmored state")
+ var fresh=State.new();check(fresh.character=="shaun","New neighborhoods default to Shaun")
+ fresh.vehicles={"test":{"position":[0.0,.04,0.0],"yaw":0.0,"armored":false}}
+ var before_armor=fresh.snapshot();check(not fresh.purchase_armor("test") and fresh.snapshot()==before_armor,"Unavailable armor cannot spend supplies")
+ fresh.inventory.vehicle_parts=2;fresh.inventory.scrap=10;check(fresh.purchase_armor("test") and fresh.vehicles.test.armored and fresh.inventory.vehicle_parts==0 and fresh.inventory.scrap==0,"Armor purchase spends exact parts/scrap and marks the selected car")
+ var armored=fresh.snapshot();check(not fresh.purchase_armor("test") and fresh.snapshot()==armored,"Repeated armor purchase cannot spend again")
+ var armor_reloaded=State.new();check(armor_reloaded.restore(JSON.parse_string(JSON.stringify(armored))) and armor_reloaded.vehicles.test.armored,"Fitted armor survives JSON save/reload")
+ var malformed=armored.duplicate(true);malformed.vehicles.test.armored=1;check(not State.validate(malformed),"Nonboolean armor state rejected")
  var bad_character=v4.snapshot();bad_character.character="unknown";check(not State.validate(bad_character),"Unknown survivor rejected")
  var bad_vehicle=v4.snapshot();bad_vehicle.vehicles["parked-1"].yaw=NAN;check(not State.validate(bad_vehicle),"Nonfinite vehicle transform rejected")
  check(v4.collect("axe-found","axe",1) and v4.equip("axe") and v4.magazine==0,"Melee weapon can be looted and equipped without ammunition")

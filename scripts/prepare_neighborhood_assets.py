@@ -18,9 +18,11 @@ mode=p.add_mutually_exclusive_group()
 mode.add_argument('--export-only', action='store_true')
 mode.add_argument('--resume', action='store_true')
 p.add_argument('--repair-poses', action='store_true')
+p.add_argument('--update-props',nargs='+',default=[],help='Rebuild named prop working copies; retains Blender backups. Use with --resume.')
 a = p.parse_args(sys.argv[sys.argv.index('--') + 1:])
 if a.repair_poses and a.export_only:
     p.error('--repair-poses changes a working source; use --resume, not --export-only')
+if a.update_props and (not a.resume or a.export_only):p.error('--update-props requires --resume and cannot use --export-only')
 home, private = a.home.expanduser().resolve(), a.assets.expanduser().resolve()
 public = Path(__file__).resolve().parents[1]
 for folder in (home, private):
@@ -50,7 +52,7 @@ def export(name, path):
 def save(name):
     """Save a new private working source with Blender backup protection."""
     path = working / (name + '.blend')
-    if path.exists():
+    if path.exists() and name not in a.update_props:
         raise SystemExit('Existing source protected: ' + str(path))
     bpy.context.preferences.filepaths.save_version = 2
     bpy.context.preferences.filepaths.use_auto_save_temporary_files = True
@@ -79,7 +81,10 @@ def isolate(names, size=None):
             bpy.data.objects.remove(obj, do_unlink=True)
     points = [obj.matrix_world @ Vector(corner) for obj in meshes for corner in obj.bound_box]
     low, high = (Vector([fn(v[i] for v in points) for i in range(3)]) for fn in (min, max))
-    factor = Vector([size[i] / max(.001, high[i] - low[i]) for i in range(3)]) if size else Vector((1, 1, 1))
+    if isinstance(size,(int,float)):
+        factor=Vector((1,1,1))*(size/max(high-low))
+    else:
+        factor = Vector([size[i] / max(.001, high[i] - low[i]) for i in range(3)]) if size else Vector((1, 1, 1))
     transform = Matrix.Diagonal((*factor, 1)) @ Matrix.Translation(Vector((-(low.x + high.x) / 2, -(low.y + high.y) / 2, -low.z)))
     for obj in meshes:
         obj.matrix_world = transform @ obj.matrix_world
@@ -111,12 +116,16 @@ def portable_materials():
 
 
 if not a.export_only:
-    right_handed(private / "quaternius/survivor.blend", a.repair_poses)
+    if a.repair_poses:
+        for name in ['survivor','survivor-lis','survivor-sam','survivor-shaun']:right_handed(private/'quaternius'/(name+'.blend'),True)
     selections = {
         'tree-pine': ('nature', 'PineTree_3', (4.2, 4.2, 8.0)),
         'tree-willow': ('nature', 'Willow_2', (6, 6, 7)),
         'flowers': ('nature', 'Flowers', (.5, .5, .4)),
-        'woodlog': ('nature', 'WoodLog_Moss', (1.8, .6, .5)),
+        'woodlog': ('nature', 'WoodLog_Moss', None),
+        'raft': ('survival','Raft', 3.8),
+        'raft-paddle': ('survival','Raft_Paddle', 1.65),
+        'storage-special': ('zombie-apocalypse','Chest_Special', (1.05,.65,.7)),
         'bush-berries': ('nature', 'BushBerries_1', (1.3, 1.3, 1)),
         'backpack': ('survival', 'Backpack', (.4, .25, .5)),
         'campfire': ('survival', 'Bonfire', (.9, .9, .28)),
@@ -138,7 +147,7 @@ if not a.export_only:
         'trashbag': ('zombie-apocalypse', 'TrashBag_1', (.55, .5, .7)),
     }
     for name, (pack, filename, size) in selections.items():
-        if a.resume and (working / (name + '.blend')).exists():
+        if a.resume and (working / (name + '.blend')).exists() and name not in a.update_props:
             continue
         original = home / 'downloads' / pack / 'extracted' / ('Environment/Blends' if pack == 'zombie-apocalypse' else 'Blends') / (filename + '.blend')
         before = hashlib.sha256(original.read_bytes()).hexdigest()

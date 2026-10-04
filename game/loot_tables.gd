@@ -5,7 +5,14 @@ static func stock(seed_value:int,address:String,kind:String) -> Array:
  var key=address.to_lower().replace(" ","-");var result:Array=[]
  var add=func(item:String,amount:int,ident:String=""):
   if amount>0:result.append({"id":key+"-"+kind+"-"+item if ident=="" else ident,"kind":item,"amount":amount})
- if kind=="fridge":
+ if kind=="parts":
+  add.call("vehicle_parts",rng.randi_range(3,5));add.call("scrap",rng.randi_range(8,14));add.call("wood",rng.randi_range(1,3))
+ elif kind=="market":
+  add.call("food",rng.randi_range(2,6));add.call("water",rng.randi_range(1,4))
+  if rng.randf()<.3:add.call("medkit",1)
+ elif kind=="chest":
+  add.call("wood",rng.randi_range(2,6));add.call("ammo",rng.randi_range(8,20));add.call("scrap",rng.randi_range(2,5))
+ elif kind=="fridge":
   add.call("food",rng.randi_range(1,4),key+"-food");add.call("water",rng.randi_range(0,3),key+"-water")
   if rng.randf()<.22:add.call("medkit",1)
  elif kind=="drawer":

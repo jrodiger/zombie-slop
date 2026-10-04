@@ -83,6 +83,8 @@ func _physics_process(delta):
  elif firing_left>0:game.assets.animate(animation,weapon_clip("Shoot"),.03,false)
  elif move.length()>.1:game.assets.animate(animation,locomotion_clip("Run" if sprinting else "Walk"),.18)
  else:game.assets.animate(animation,weapon_clip("Aim") if aiming else locomotion_clip("Idle"),.18)
+ if animation!=null:
+  animation.speed_scale=animation.current_animation_length/float(profile().reload) if reload_left>0 and animation.current_animation_length>0 else 1.0
  if move.length()>.1 and is_on_floor():
   step_time-=delta
   if step_time<=0:

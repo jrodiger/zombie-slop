@@ -1,52 +1,82 @@
 extends Node
 var game
 var failed:int=0
-func shot(name:String,at:Vector3,target:Vector3):
- # Fixed room cameras inspect geometry without the avatar obscuring the lens.
- game.player.visual.visible=false
- game.player.camera.global_position=at;game.player.camera.look_at(target)
- await get_tree().create_timer(.15).timeout
- await RenderingServer.frame_post_draw
- game.get_viewport().get_texture().get_image().save_png(game.report_dir()+"/"+name+".png")
- game.player.visual.visible=true
+var targets:int=0
+func shot(name:String,at:Vector3,target:Vector3,hide_player:bool=true):
+ game.player.visual.visible=not hide_player;game.player.camera.global_position=at;game.player.camera.look_at(target)
+ await get_tree().create_timer(.15).timeout;await RenderingServer.frame_post_draw
+ game.get_viewport().get_texture().get_image().save_png(game.report_dir()+"/"+name+".png");game.player.visual.visible=true
 func walk(target:Vector3) -> bool:
- game.player.set_physics_process(true)
- for i in range(240):
+ targets+=1;game.player.set_physics_process(true)
+ for i in range(300):
   var offset=target-game.player.position;offset.y=0
   if offset.length()<.18:break
-  game.player.yaw=atan2(-offset.x,-offset.z);Input.action_press("forward")
-  await get_tree().physics_frame
+  game.player.yaw=atan2(-offset.x,-offset.z);Input.action_press("forward");await get_tree().physics_frame
  Input.action_release("forward");game.player.velocity=Vector3.ZERO;game.player.set_physics_process(false)
- var reached=Vector2(game.player.position.x-target.x,game.player.position.z-target.z).length()<.4
+ var reached=Vector2(game.player.position.x-target.x,game.player.position.z-target.z).length()<.4 and absf(game.player.position.y-target.y)<.35
  print("ROOM WALK ",target," reached=",reached," actual=",game.player.position)
  if not reached:failed+=1
  return reached
+func poses():
+ game.change_character("shaun");game.player.position=Vector3(-24,.04,19);game.player.visual.rotation.y=0;game.player.set_physics_process(false)
+ for kind in ["pistol","rifle","shotgun","smg","revolver","compact_shotgun"]:
+  game.state.weapons[kind]=0;game.player.equip(kind)
+  for pose in ["LowerIdle","Aim","Shoot","Reload"]:
+   game.player.animation.play(game.player.weapon_clip(pose),0);game.player.animation.seek(.15 if pose!="Reload" else .95,true);game.player.animation.pause()
+   for side in [-1,1]:
+    await shot("shaun-"+kind+"-"+pose+"-"+str(side),game.player.position+Vector3(side*1.5,1.4,1.7),game.player.position+Vector3(0,1.12,.35),false)
+   if pose=="Reload":
+    for time in [.25,.65,1.4,1.8]:
+     game.player.animation.play(game.player.weapon_clip(pose),0);game.player.animation.seek(time,true);game.player.animation.pause()
+     await shot("shaun-"+kind+"-reload-"+str(time),game.player.position+Vector3(-1.3,1.5,1.7),game.player.position+Vector3(0,1.05,.2),false)
 func run(owner_game):
  game=owner_game;game.new_game();game.player.set_process(false)
  for enemy in get_tree().get_nodes_in_group("zombies"):enemy.set_physics_process(false)
- for house_index in [0,1,6,7]:
-  var house=game.world.HOUSES[house_index];var at:Vector3=house.at
-  game.player.position=at+Vector3(0,.2,-9);game.player.velocity=Vector3.ZERO;game.player.reset_physics_interpolation()
-  await shot("house-%d-front"%house_index,at+Vector3(-10,3,-13),at+Vector3(0,2,0))
-  await shot("house-%d-eaves"%house_index,at+Vector3(9,3.25,-9),at+Vector3(0,3.2,0))
-  await shot("house-%d-backyard"%house_index,at+Vector3(9,4,9),at+Vector3(4,.6,6.3))
-  await shot("house-%d-backyard-close"%house_index,at+Vector3(5.3,1.7,5.8),at+Vector3(4,.6,6.3))
-  await walk(at+Vector3(0,.2,-2));await walk(at+Vector3(-2,.2,-2))
-  await shot("house-%d-kitchen"%house_index,at+Vector3(1.2,1.9,-1.5),at+Vector3(-3.9,1.1,-3.5))
-  var fridge=game.world.containers.filter(func(entry):return entry.address==house.address and entry.kind=="fridge")[0]
-  game.world.search_container(fridge);await get_tree().create_timer(.3).timeout
-  await shot("house-%d-fridge-open"%house_index,at+Vector3(-2.1,1.4,-2),at+Vector3(-4.5,1.1,-3.5));game.world.close_containers()
-  await walk(at+Vector3(0,.2,-1));await walk(at+Vector3(0,.2,2.5));await walk(at+Vector3(3.2,.2,2.5))
-  await shot("house-%d-bedroom"%house_index,at+Vector3(.4,1.8,3),at+Vector3(4.6,.75,3.5))
-  var safe=game.world.containers.filter(func(entry):return entry.address==house.address and entry.kind=="safe")[0]
-  game.world.search_container(safe);await get_tree().create_timer(.3).timeout
-  await shot("house-%d-safe-open"%house_index,at+Vector3(2.9,1.15,2.1),at+Vector3(4.7,.6,3.5));game.world.close_containers()
-  await shot("house-%d-bedroom-reverse"%house_index,at+Vector3(4.7,1.7,4.4),at+Vector3(-3,.7,3))
-  await walk(at+Vector3(0,.2,2.5));await walk(at+Vector3(0,.2,-2));await walk(at+Vector3(0,.2,-9))
- game.player.position=Vector3(105,game.world.ground_height(105,55)+.2,55)
- await shot("river-bridge",Vector3(101,7,55),Vector3(89,-.2,55))
- await shot("river-east-approach",Vector3(112,5,57),Vector3(100,0,55))
- await shot("forest-slope",Vector3(-104,8,57),Vector3(-116,4,78))
- game.ui.backpack();await shot("inventory",game.player.camera.global_position,game.player.camera.global_position-game.player.camera.global_basis.z)
- print("VISUAL INSPECTION WALK FAILURES ",failed)
- return 1 if failed else 0
+ if not "--environment-only" in OS.get_cmdline_user_args():await poses()
+ if "--poses-only" in OS.get_cmdline_user_args():return 0
+ var addresses=[] if "--environment-only" in OS.get_cmdline_user_args() else ["12 Cedar Lane","8 Cedar Lane","11 Cedar Lane","CEDAR AUTO & FUEL","CEDAR MARKET","ORCHARD MART","1 Meadow Farm"]
+ for address in addresses:
+  var plot=game.world.properties.filter(func(entry):return entry.address==address)[0];var at:Vector3=plot.at;var basis:Basis=plot.basis;var depth=float(plot.depth);var name=address.to_lower().replace(" ","-")
+  var entry_x=3.5 if plot.plan=="garage" else 0.0
+  game.player.position=at+basis*Vector3(entry_x,.2,-depth/2-2.0);game.player.velocity=Vector3.ZERO;game.player.reset_physics_interpolation()
+  await shot(name+"-front",at+basis*Vector3(-10,5,-16),at+Vector3.UP*2.8)
+  await walk(at+basis*Vector3(entry_x,.16,-depth/2+1.5))
+  await shot(name+"-inside",at+basis*Vector3(.5,1.85,-depth/2+1.5),at+basis*Vector3(-2,1,.4))
+  if plot.plan=="cottage":
+   for point in [Vector3(-2,.16,-2),Vector3(2,.16,-2),Vector3(0,.16,-.2),Vector3(0,.16,2.25),Vector3(-1.5,.16,2.25),Vector3(0,.16,2.25),Vector3(2.5,.16,2.25)]:await walk(at+basis*point)
+   await shot(name+"-kitchen",at+basis*Vector3(0,1.85,-1.7),at+basis*Vector3(-3.8,1.05,-3.8));await shot(name+"-bedroom",at+basis*Vector3(-.5,1.7,2.1),at+basis*Vector3(-3.6,.7,3.8));await shot(name+"-bathroom",at+basis*Vector3(2.4,1.7,2.1),at+basis*Vector3(4.5,.8,4.1))
+  elif plot.plan in ["townhouse","farmhouse"]:
+   var sx=float(plot.width)/2-1.3
+   await walk(at+basis*Vector3(0,.16,-4.5));await walk(at+basis*Vector3(sx,.16,-4.5));await walk(at+basis*Vector3(sx,3.36,2.8))
+   await shot(name+"-stairs-top",at+basis*Vector3(sx,5.1,3.1),at+basis*Vector3(sx,1,-2.5))
+   await walk(at+basis*Vector3(0,3.36,3));await shot(name+"-upper-bedroom",at+basis*Vector3(-.6,5.0,.2),at+basis*Vector3(-float(plot.width)/2+1.5,4.1,-2))
+   var bath_entry=Vector3(-1.3,3.36,2.7) if plot.plan=="townhouse" else Vector3(2.6,3.36,4.4)
+   if plot.plan=="farmhouse":await walk(at+basis*Vector3(2.6,3.36,3))
+   await walk(at+basis*bath_entry)
+   await shot(name+"-upper-bathroom",at+basis*(bath_entry+Vector3(0,1.6,0)),at+basis*(Vector3(-2.7,4.2,5.4) if plot.plan=="townhouse" else Vector3(2.5,4.2,5.45)))
+   if plot.plan=="farmhouse":await walk(at+basis*Vector3(2.6,3.36,3))
+   await walk(at+basis*Vector3(0,3.36,3))
+   await walk(at+basis*Vector3(sx,3.36,2.8));await walk(at+basis*Vector3(sx,.16,-4.5))
+  else:
+   await shot(name+"-reverse",at+basis*Vector3(-float(plot.width)/2+1,2.1,3.5),at+basis*Vector3(2,1,-3))
+   await walk(at+basis*Vector3(entry_x,.16,-depth/2+1));await walk(at+basis*Vector3(entry_x,.16,-depth/2-2))
+  for entry in game.world.containers.filter(func(entry):return entry.address==address):
+   game.world.search_container(entry);await get_tree().create_timer(.3).timeout
+   var target=entry.node.global_position+Vector3.UP*.6
+   await shot(name+"-"+entry.kind+"-open",target+entry.node.global_basis*Vector3(-1.8,.8,-1.8),target)
+   game.world.close_containers()
+ var raft=game.world.furnishings.filter(func(entry):return entry.kind=="raft")[0].node.global_position
+ for view in [{"name":"fuel-forecourt","at":Vector3(-3,5,-115),"target":Vector3(20,1,-106)},{"name":"orchard-approach","at":Vector3(53,5,-49),"target":Vector3(72,1,-58)},{"name":"river-raft","at":raft+Vector3(-4,3,-5),"target":raft+Vector3.UP*.4},{"name":"forest-camp","at":Vector3(-104,7,43),"target":Vector3(-98,4,48)},{"name":"street-asphalt","at":Vector3(1,1,-45),"target":Vector3(0,.04,-52)}]:await shot(view.name,view.at,view.target)
+ game.ui.backpack();await shot("inventory-preview",game.player.camera.position,game.player.camera.position-game.player.camera.global_basis.z)
+ game.close_overlay()
+ var safe=game.world.containers.filter(func(entry):return entry.id=="8-cedar-lane-safe")[0]
+ game.ui.loot_menu(safe);await shot("loot-model-pictures",game.player.camera.position,game.player.camera.position-game.player.camera.global_basis.z)
+ game.close_overlay()
+ for variant in ["zombie","zombie-chubby","zombie-arm","zombie-ribcage"]:
+  var enemy=get_tree().get_nodes_in_group("zombies").filter(func(entry):return entry.variant==variant)[0]
+  for entry in get_tree().get_nodes_in_group("zombies"):entry.visible=entry==enemy
+  enemy.animation.active=true;game.assets.animate(enemy.animation,"Idle",0);enemy.animation.seek(.1,true);enemy.animation.pause()
+  enemy.position=Vector3(0,.04,18);enemy.visual.rotation.y=0
+  await shot("variant-"+variant,enemy.position+Vector3(-1.8,1.4,2.2),enemy.position+Vector3.UP*.9)
+ var f=FileAccess.open(game.report_dir()+"/inspection.json",FileAccess.WRITE);f.store_string(JSON.stringify({"targets":targets,"failures":failed,"graphical":DisplayServer.get_name()!="headless"},"  "))
+ print("VISUAL INSPECTION ",targets," targets, ",failed," failures");return 1 if failed else 0

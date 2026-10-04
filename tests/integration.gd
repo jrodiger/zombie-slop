@@ -20,6 +20,12 @@ func tap(action:String):
  await get_tree().process_frame
  e=InputEventAction.new();e.action=action;e.pressed=false;Input.parse_input_event(e)
  await get_tree().process_frame
+func menu_buttons(node:Node) -> Array:
+ var result:Array=[]
+ for child in node.get_children():
+  if child is Button:result.append(child)
+  result.append_array(menu_buttons(child))
+ return result
 func loot_container(ident:String,item_id:String):
  var matches=game.world.containers.filter(func(entry):return entry.id==ident)
  if matches.is_empty():check(false,"Container exists: "+ident);return
@@ -30,7 +36,7 @@ func loot_container(ident:String,item_id:String):
  if game.open_container_id!=ident:return
  var item=entry.stock.filter(func(value):return value.id==item_id)[0]
  var label=game.catalog.WEAPONS[item.kind].name if item.kind in game.catalog.WEAPONS else item.kind.replace("_"," ").capitalize()
- for child in game.ui.panel_content.get_children():
+ for child in menu_buttons(game.ui.panel_content):
   if child is Button and child.text.begins_with(label+"   ×"):
    child.pressed.emit();break
  await wait(.1)
@@ -74,11 +80,14 @@ func run(owner_game):
  check(game.running and not game.overlay,"Start enters playable scene")
  check(game.player.animation!=null and game.player.animation.get_animation_list().size()>=8,"Imported skeleton has eight animation clips")
  check(game.player.weapon_visuals.size()==game.catalog.WEAPONS.size(),"Imported survivor carries all switchable pack weapons")
- check(game.world.HOUSES.size()==14 and game.world.containers.size()==42,"Expanded neighborhood has fourteen accessible homes and 42 containers")
+ check(game.world.properties.size()==19 and game.world.containers.size()>=70,"District includes sixteen accessible homes, three shops and varied searchable fixtures")
  for item in game.world.loot:
-  var probe=item.node.position+item.node.basis*Vector3(0,.05,.9)
-  var selectable=game.world.nearest_loot(probe)
-  check(selectable!=null and selectable.id==item.id,"Every designated furnishing can be reached by the loot ray: "+item.kind)
+  var reached=false;var ground=game.world.ground_height(item.node.position.x,item.node.position.z)
+  for offset in [Vector3(0,0,1.2),Vector3(0,0,-1.2),Vector3(1.2,0,0),Vector3(-1.2,0,0)]:
+   var probe=item.node.position+offset;probe.y=ground+(3.335 if item.node.position.y-ground>3.2 else .135)
+   var selectable=game.world.nearest_loot(probe)
+   if selectable!=null and selectable.id==item.id:reached=true;break
+  check(reached,"Visible world pickup has an accessible loot ray: "+item.id)
  Input.action_press("aim");await wait(.3)
  var muzzle=game.player.flash.get_parent()
  check(muzzle.name=="PistolMuzzle","Muzzle flash uses the pack weapon socket")
@@ -189,8 +198,9 @@ func run(owner_game):
  check(game.state.health==95 and game.state.inventory.food==food_before-1,"Refrigerator food restores health and consumes exactly one item")
  game.state.health=100;game.player.use_supply("food")
  check(game.state.inventory.food==food_before-1,"Full health cannot waste a food item")
- for entry in [["fern",Vector3(-12,.2,13)],["radio",Vector3(21.5,.2,4.2)]]:
-  game.player.position=entry[1];await wait(.1);game.interact();await wait(.1)
+ for ident in ["fern","radio"]:
+  var item=game.world.loot.filter(func(entry):return entry.id==ident)[0]
+  game.player.position=item.node.position+item.node.basis*Vector3(0,0,1.1);game.player.position.y=.2;await wait(.1);game.interact();await wait(.1)
  check(game.state.inventory.plant==1 and game.state.inventory.radio==1,"Collect multiple actual world objects")
  check(game.state.inventory.wood==12 and game.state.inventory.scrap==4,"Collect world construction materials")
  var home_route:PackedVector3Array=game.world.route(Vector3(0,0,20),Vector3(-24,0,30))
@@ -309,6 +319,7 @@ func run(owner_game):
  check(fallback_zombie.animation==null and fallback_zombie.visual!=null,"Zombie model without animations configures safely")
  fallback_zombie.queue_free();game.assets.scenes.zombie=original_zombie;await wait(.1)
  var expanded=load("res://tests/expansion.gd").new();add_child(expanded);await expanded.run(game,self);expanded.queue_free()
+ var district=load("res://tests/district.gd").new();add_child(district);await district.run(game,self);district.queue_free()
  game.state.restore(snapshot);game.rebuild();game.running=true;game.close_overlay();game.state.save_to(game.save_path)
  var report={"checks":checks,"failures":failures,"graphical":DisplayServer.get_name()!="headless","engine":Engine.get_version_info().string,"physical_gamepad":false}
  var f=FileAccess.open(game.report_dir()+"/integration.json",FileAccess.WRITE);f.store_string(JSON.stringify(report,"  "));f.close()

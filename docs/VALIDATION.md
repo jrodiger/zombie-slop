@@ -1,4 +1,51 @@
-# Current validation — iteration four
+# Current validation — iteration five
+
+Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal, 1280×800. Normal play retains a 60 FPS cap, VSync and shadows off. Steam Deck and physical controller feel remain unverified.
+
+## Gameplay and actual model inspection
+
+**106 source/save checks and 741 exported graphical checks pass**, followed by **six fresh-process save/relaunch checks**. Coverage includes the prior scavenging/free placement/storage/combat loop, all four survivors and nine weapons, six intact drivable cars, armor transactions/model persistence, looping engine pitch/pause/exit behavior, live survivor previews, road/feet support, every solid furnishing's exported bounds, fixture overlap checks, independently persistent shop stock and clear house gates. A saved position beyond the old map limit reloads on the expanded rural road. Supported upstairs and road walking use the actual player capsule and collision bodies.
+
+The exported room inspection reached **48 actual physics targets with zero failures** across a cottage, townhouse, two neighborhood/rural farmhouses and all three shops. Captures cover entrances, kitchen/bedroom/bathroom views, upstairs landings and stair descent, roof undersides and opened cabinet fronts. Six guns have lowered/aim/fire/reload captures from both sides, with additional reload samples. All four survivor rigs received the inspected calibration. These are screenshots and scripted movement in a rendered exported native game, not human playtesting of every room or camera angle.
+
+Inspection exposed and corrected collectible furniture blocking a bedroom door/landing, a tree intersecting the camp tent, raw raft/oar units far larger than game units, a radio/bottle overlap and incoherent independent finger-root rotation. The raft/oars now use uniform sizing, the mossy log retains author proportions, and vegetation has explicit yard/path/camp/riverbank clearances. Gun poses keep palm/thumb/index roots coherent, fit oversized weapons once and bring the support target within arm reach. Reload gestures lower the weapon and move the support hand from belt to receiver and back, timed to gameplay reload duration. They remain stylized baked poses, without individual-finger runtime IK or detachable magazines.
+
+The user's real version-four save passed read-only migration, preserving survivor choice, inventory counts, collected identities and weapon magazines. Current saves/settings were copied to external `backups/pre-iteration5-saves/` and remain byte-identical. All tests use separate save names. Desktop automation was unavailable because macOS was locked and automatic unlocking failed; an unlock request remained pending. Actual native viewport rendering and engine-scripted interaction were available and verified. No direct desktop/audio-listening or physical-controller coverage is claimed for this round.
+
+## Sustained performance
+
+The exported Mobile / Metal candidate completed **600.009 seconds** at **1280×800**, with a **60 FPS cap and VSync on, shadows off**, **18 living zombies in every section** and **50 placed objects**. Eight equally timed views repeat twice, with actual traversal, shots, camera pans, placement preview and vehicle acceleration. No other graphical game or Blender session ran concurrently; lightweight source/documentation checks continued. macOS remained locked, so this is evidence about the exported viewport workload and cadence rather than direct foreground desktop interaction.
+
+- Average **59.97 FPS**; p50/p95/p99 **16.681 / 17.932 / 18.509 ms**.
+- **1% low 52.98 FPS**; maximum **23.037 ms**.
+- **12 of 35,984 frames exceeded 20 ms; none exceeded 33.333 ms**.
+- 18,476 frames exceeded the literal 16.667 ms boundary, including capped presentation jitter. This supports near-60 pacing with brief dips, not perfect 60 FPS or Steam Deck capacity.
+
+| View (two laps) | Average FPS | p99 ms | 1% low FPS |
+|---|---:|---:|---:|
+| 50-piece furnished base | 59.97 | 18.420 | 53.54 |
+| driving | 59.97 | 18.557 | 52.75 |
+| forest and river | 59.97 | 18.129 | 53.87 |
+| interior | 59.97 | 18.419 | 53.03 |
+| placement preview | 59.97 | 18.241 | 53.72 |
+| populated supply view | 59.97 | 18.681 | 52.68 |
+| shooting encounter | 59.97 | 18.674 | 52.42 |
+| street traversal | 59.97 | 18.509 | 52.84 |
+
+Sampled physics medians range from 1.88 to 4.86 ms, with a 8.69 ms largest sampled frame. Process monitors include presentation waiting and do not isolate render CPU cost. The report and native viewport capture remain external under `verification/iteration5/performance/`. Later changes improve menu weapon-icon framing, initialize the zombie idle pose before play and replace two roadside poster meshes with small mounted street signs. House paths now stop at the near road edge and the fuel forecourt joins the same asphalt mesh; its street-to-forecourt driving check passes. Building interiors, vegetation density, audio and graphics settings are unchanged. A final 60.016-second pacing run with the same settings/workload averaged 60.00 FPS, with p95/p99 18.195/19.061 ms and 1% low 49.34 FPS. Five of 3,601 frames exceeded 20 ms, including one 38.569 ms frame. This brief final run shows occasional dips; the ten-minute result above describes the preceding candidate. Final exported gameplay checks cover the corrections.
+
+
+## Review and delivery
+
+PR #4 was explicitly authorized for merge at the user's discretion after existing comments were addressed and CI passed. It was squash-merged as `a74d17dbd2e8d7370df88cbaeea50ae69602ccc8` on 2026-10-04. The final adapter finding had affirmative review, while a full rereview was rate-limited; no full current-head completion is implied. That override applies to PR #4. This iteration is a separate PR and uses the original current-head review/check/two-poll gate.
+
+The single stable app remains `builds/Zombie Slop.app`. Cross exports are organized under `builds/cross-platform/`; earlier working apps and source/download backups remain preserved outside public Git. The paired private asset revision and upload evidence are in ASSETS.json. No assets, media, builds or LFS pointers are uploaded to the public repository or CI artifacts.
+
+## Prototype limits
+
+The 328m map has sixteen homes and three shops across four home types, plus rural plots, woods and river scenery; it is still a small stylized prototype. Armor changes the model and is cosmetic until vehicle damage is implemented. Vehicles have arcade controls, no fuel/damage/drivetrain or seated animation. Raft/backpack/campfire mechanics remain decorative. Zombie navigation is a ground-plane grid, without deliberate multi-floor routing. Same-rig gun actions blend at runtime without a layered upper-body system. Linux/Windows are cross-exported rather than runtime-tested; Steam Deck, Android and physical controllers remain unverified.
+
+# Prior iteration-four validation
 
 Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal, 1280×800. Normal play retains the 60 FPS cap, VSync and shadows off. Steam Deck and physical controller feel remain unverified.
 
