@@ -4,7 +4,7 @@ Target: Apple M3 MacBook Air, 16 GB; Godot 4.7.2 Mobile / Metal, 1280×800. Norm
 
 ## Gameplay and actual model inspection
 
-**106 source/save checks and 741 exported graphical checks pass**, followed by **six fresh-process save/relaunch checks**. Coverage includes the prior scavenging/free placement/storage/combat loop, all four survivors and nine weapons, six intact drivable cars, armor transactions/model persistence, looping engine pitch/pause/exit behavior, live survivor previews, road/feet support, every solid furnishing's exported bounds, fixture overlap checks, independently persistent shop stock and clear house gates. A saved position beyond the old map limit reloads on the expanded rural road. Supported upstairs and road walking use the actual player capsule and collision bodies.
+**106 source/save checks and 743 exported graphical checks pass**, followed by **six fresh-process save/relaunch checks**. Coverage includes the prior scavenging/free placement/storage/combat loop, all four survivors and nine weapons, six intact drivable cars, armor transactions/model persistence, looping engine pitch/pause/exit behavior, live survivor previews, road/feet support, every solid furnishing's exported bounds, fixture overlap checks, independently persistent shop stock and clear house gates. A saved position beyond the old map limit reloads on the expanded rural road. Supported upstairs and road walking use the actual player capsule and collision bodies.
 
 The exported room inspection reached **48 actual physics targets with zero failures** across a cottage, townhouse, two neighborhood/rural farmhouses and all three shops. Captures cover entrances, kitchen/bedroom/bathroom views, upstairs landings and stair descent, roof undersides and opened cabinet fronts. Six guns have lowered/aim/fire/reload captures from both sides, with additional reload samples. All four survivor rigs received the inspected calibration. These are screenshots and scripted movement in a rendered exported native game, not human playtesting of every room or camera angle.
 
@@ -36,6 +36,8 @@ Sampled physics medians range from 1.88 to 4.86 ms, with a 8.69 ms largest sampl
 
 
 ## Review and delivery
+
+CodeRabbit review exposed an encoded-audio endpoint error: runtime now derives the loop endpoint from duration and sample rate, with exported checks confirming all eight seconds and playback past the wrap. Assembly now reports missing district/engine files with recovery steps; nine disposable filesystem cases passed, covering a complete fixture, seven missing-file cases and a stale export. Skipped countertop furnishings are guarded. An unused elbow-pole helper was removed; the inspected baked poses and private model checkpoint are unchanged. The final exported suite and fresh-process persistence checks passed again after these corrections.
 
 PR #4 was explicitly authorized for merge at the user's discretion after existing comments were addressed and CI passed. It was squash-merged as `a74d17dbd2e8d7370df88cbaeea50ae69602ccc8` on 2026-10-04. The final adapter finding had affirmative review, while a full rereview was rate-limited; no full current-head completion is implied. That override applies to PR #4. This iteration is a separate PR and uses the original current-head review/check/two-poll gate.
 

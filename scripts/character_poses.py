@@ -38,7 +38,8 @@ def right_handed(path,repair=False):
     support_correction=support_direction.rotation_difference(Vector((0,-1,.15)).normalized())
     def empty(name):
         obj=bpy.data.objects.new(name,None);bpy.context.collection.objects.link(obj);return obj
-    wrist=empty('MainWristTarget');elbow=empty('MainElbowPole');elbow.location=rig.matrix_world@Vector((.62,.02,.85))
+    # Preserve the authored chain bend; no pole was used in the inspected bake.
+    wrist=empty('MainWristTarget')
     primary=rig.pose.bones['LowerArm.L'].constraints.new('IK');primary.target=wrist;primary.chain_count=2;primary.use_stretch=False
     # All three finger roots share the wrist, rather than a separate Hand bone.
     # Turning only Middle1 tears the palm away from its thumb/index finger.
@@ -112,7 +113,7 @@ def right_handed(path,repair=False):
                 if animation:bpy.data.actions.remove(animation)
     rig.pose.bones['LowerArm.L'].constraints.remove(primary)
     for name,constraint in zip(ROOTS,main_constraints):rig.pose.bones[name+'.L'].constraints.remove(constraint)
-    for obj in [wrist,elbow,*orientations]:
+    for obj in [wrist,*orientations]:
         animation=obj.animation_data.action if obj.animation_data else None;bpy.data.objects.remove(obj,do_unlink=True)
         if animation:bpy.data.actions.remove(animation)
     rig.animation_data.action=bpy.data.actions['Idle_Gun'];bpy.context.scene.frame_set(1)

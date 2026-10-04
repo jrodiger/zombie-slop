@@ -45,8 +45,9 @@ func create(at:Vector3,address:String,kind:String,yaw:float,street:Vector3,home:
   if not plan.props.is_empty():
    var counter=plan.props.filter(func(entry):return entry.kind=="counter")
    if not counter.is_empty():
-    var fixture=world.furnishings.filter(func(entry):return entry.address==address and entry.kind=="counter")[0]
-    var top=world.model_bounds(fixture.node).end.y
+    var fixtures=world.furnishings.filter(func(entry):return entry.address==address and entry.kind=="counter")
+    if fixtures.is_empty():return
+    var top=world.model_bounds(fixtures[0].node).end.y
     world.add_loot(address+"-counter-supply",supply,point(at,basis,counter[0].at)+basis*Vector3(.55,top+.015,0),1)
 func furnishing(kind:String,at:Vector3,yaw:float,solid:bool,address:String):
  var node=world.prop(kind,at,yaw,65);var bounds=world.model_bounds(node)

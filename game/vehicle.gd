@@ -20,7 +20,7 @@ func configure(owner_game,id:String,model:String,at:Vector3,yaw:float):
  update_visual()
  engine=AudioStreamPlayer3D.new();engine.stream=load("res://assets/vehicle-engine.wav");engine.max_distance=45;engine.unit_size=8;engine.volume_db=-80;add_child(engine)
  if engine.stream is AudioStreamWAV:
-  engine.stream=engine.stream.duplicate();engine.stream.loop_mode=AudioStreamWAV.LOOP_FORWARD;engine.stream.loop_begin=0;engine.stream.loop_end=engine.stream.data.size()/2
+  engine.stream=engine.stream.duplicate();engine.stream.loop_mode=AudioStreamWAV.LOOP_FORWARD;engine.stream.loop_begin=0;engine.stream.loop_end=roundi(engine.stream.get_length()*engine.stream.mix_rate)
 func update_visual():
  kind=("car-pickup-armored" if base_kind=="car" else base_kind+"-armored") if armored else base_kind
  if is_instance_valid(visual):remove_child(visual);visual.queue_free()

@@ -42,13 +42,17 @@ def main():
   editable=private/entry['source'];output=exports/(name+'.glb')
   if not editable.is_file() or not output.is_file() or hashlib.sha256(editable.read_bytes()).hexdigest()!=entry['source_sha256'] or hashlib.sha256(output.read_bytes()).hexdigest()!=entry['glb_sha256']:raise SystemExit('Stale neighborhood export: '+name)
   shutil.copy2(output,assets/output.name)
- district=json.loads((exports/'district-exports.json').read_text())
+ district_report=exports/'district-exports.json'
+ if not district_report.is_file():raise SystemExit('Missing district exports. Run scripts/create_district.py --export-only as documented in docs/SETUP.md.')
+ district=json.loads(district_report.read_text())
  plans=private/'district/building-plans.json'
+ if not plans.is_file():raise SystemExit('Missing private district plans. Restore the matching private asset checkpoint as documented in docs/SETUP.md.')
  if hashlib.sha256(plans.read_bytes()).hexdigest()!=district['plans_sha256'] or json.loads(plans.read_text())!=json.loads((SOURCE/'game/building_plans.json').read_text()):raise SystemExit('District building plans do not match this source checkout/private checkpoint.')
  required_district={'district-cottage','district-townhouse','district-farmhouse','district-garage','district-grocery','district-convenience','coffee-table','nightstand','wardrobe','tvstand','tv','rug','bath-sink','toilet','market-shelf','food-tin','ammo-box','scrap-parts','vehicle-parts','fuel-pump','wall-picture','books'}
  if not required_district.issubset(district['exports']):raise SystemExit('District export manifest is incomplete.')
  for name,entry in district['exports'].items():
   editable=private/entry['source'];output=exports/(name+'.glb')
+  if not editable.is_file() or not output.is_file():raise SystemExit('Missing district source/export: '+name+'. Restore the matching private checkpoint and run scripts/create_district.py --export-only as documented in docs/SETUP.md.')
   if hashlib.sha256(editable.read_bytes()).hexdigest()!=entry['source_sha256'] or hashlib.sha256(output.read_bytes()).hexdigest()!=entry['glb_sha256']:raise SystemExit('Stale district export: '+name)
   shutil.copy2(output,assets/output.name)
  missing=[]
@@ -68,9 +72,11 @@ def main():
   editable=private/'neighborhood/audio'/f.name
   if not f.exists() or hashlib.sha256(f.read_bytes()).hexdigest()!=entry['sha256'] or not editable.exists() or hashlib.sha256(editable.read_bytes()).hexdigest()!=entry['sha256']:missing.append(str(f)+' — missing/stale audio checkpoint')
   else:shutil.copy2(f,assets/f.name)
- engine_recipe=json.loads((private/'neighborhood/audio/vehicle-engine.json').read_text())
+ engine_manifest=private/'neighborhood/audio/vehicle-engine.json'
+ if not engine_manifest.is_file():raise SystemExit('Missing vehicle engine manifest. Restore the matching private checkpoint and run scripts/create_vehicle_audio.py --export-only as documented in docs/SETUP.md.')
+ engine_recipe=json.loads(engine_manifest.read_text())
  engine=private/'neighborhood/audio/vehicle-engine.wav';engine_export=exports/engine.name
- if not engine_export.is_file() or hashlib.sha256(engine.read_bytes()).hexdigest()!=engine_recipe['sha256'] or hashlib.sha256(engine_export.read_bytes()).hexdigest()!=engine_recipe['sha256']:raise SystemExit('Missing/stale vehicle engine loop. Run scripts/create_vehicle_audio.py --export-only as documented.')
+ if not engine.is_file() or not engine_export.is_file() or hashlib.sha256(engine.read_bytes()).hexdigest()!=engine_recipe['sha256'] or hashlib.sha256(engine_export.read_bytes()).hexdigest()!=engine_recipe['sha256']:raise SystemExit('Missing/stale vehicle engine loop. Run scripts/create_vehicle_audio.py --export-only as documented.')
  shutil.copy2(engine_export,assets/engine.name)
  if (assets/'Textures').exists():shutil.rmtree(assets/'Textures')
  licenses=assets/'licenses';licenses.mkdir(exist_ok=True)

@@ -18,6 +18,8 @@ func run(owner_game,test_suite):
  car.position=Vector3(0,.06,-106);car.rotation.y=PI/2;car.speed=0;car.velocity=Vector3.ZERO;car.reset_physics_interpolation()
  game.player.position=car.position+car.global_basis*Vector3(-2.6,.05,0);car.enter(game.player);await wait(.3)
  check(car.engine.playing and not car.engine.stream_paused and car.engine.stream.loop_mode==AudioStreamWAV.LOOP_FORWARD,"Entering starts an audible looping positional engine")
+ check(absf(car.engine.stream.get_length()-8.0)<.01 and car.engine.stream.loop_end==roundi(8.0*car.engine.stream.mix_rate),"Encoded engine loop uses all eight seconds of samples")
+ await wait(8.1);check(car.engine.playing,"Engine playback continues after a complete idle loop")
  var idle=car.engine.pitch_scale;Input.action_press("forward");await wait(.8);Input.action_release("forward")
  check(car.engine.pitch_scale>idle+.1,"Engine pitch responds to throttle and acceleration")
  game.ui.backpack();await wait(.1);check(car.engine.stream_paused,"Paused inventory suspends engine playback");game.close_overlay();await wait(.1)
