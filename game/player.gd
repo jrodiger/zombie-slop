@@ -1,6 +1,7 @@
 extends CharacterBody3D
 const Movement=preload("res://game/movement.gd")
 const Motion=preload("res://game/character_motion.gd")
+const PISTOL_GRIP_OFFSET=Vector3(.06,.015,.025)
 var motion
 var game
 var driving=null
@@ -108,6 +109,10 @@ func set_character(kind:String):
  for weapon_kind in game.catalog.WEAPONS:
   var weapon=visual.find_child(model_name(weapon_kind),true,false)
   if weapon!=null:weapon_visuals[weapon_kind]=weapon
+ # Seat the pistol handle inside the curled fingers, retaining the bone socket
+ # and barrel orientation. Markers are children and follow this same offset.
+ var pistol=weapon_visuals.get("pistol")
+ if pistol!=null:pistol.translate_object_local(PISTOL_GRIP_OFFSET)
  if is_instance_valid(flash):visual.add_child(flash) if flash.get_parent()==null else flash.reparent(visual,false);update_weapon()
  motion=Motion.new();motion.configure(game,animation)
  game.state.character=kind;reload_left=0;melee_left=0;melee_pending=false
