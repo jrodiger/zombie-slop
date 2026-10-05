@@ -2,6 +2,7 @@
 """Record a platform export's paired sources and exact external build hashes."""
 import argparse,hashlib,json,subprocess
 from pathlib import Path
+from assemble import asset_fingerprint
 SOURCE=Path(__file__).resolve().parents[1]
 def record(home,platform):
  """Fingerprint outputs for packaging; record uncommitted source explicitly."""
@@ -10,6 +11,7 @@ def record(home,platform):
  paths=sorted(p for p in folder.rglob('*') if p.is_file())
  if not paths:raise SystemExit('No exported files for '+platform)
  paired=json.loads((home/'workspace/assembly.json').read_text())
+ if paired.get('asset_sha256')!=asset_fingerprint(home/'workspace/assets'):raise SystemExit('Assembled assets changed; reassemble before recording an export.')
  current=subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],text=True).strip()
  if paired['code_commit']!=current:raise SystemExit('Runtime source is stale; assemble this checkout before recording an export.')
  diff=subprocess.check_output(['git','-C',str(SOURCE),'diff','HEAD','--binary'])

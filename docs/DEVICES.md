@@ -65,7 +65,7 @@ Set `JAVA_HOME` to the JDK's Home directory and `ANDROID_HOME` to the SDK root. 
 python3 scripts/package_devices.py
 ```
 
-`ZOMBIE_HOME`, `ZOMBIE_ASSETS` and `GODOT` select the external workspace, matching private asset checkout and engine. The package script validates and copies complete tested/exported build outputs into external transfer packages and adds SHA-256 sidecars. It does not upload anything to Drive or publish anywhere.
+`ZOMBIE_HOME`, `ZOMBIE_ASSETS` and `GODOT` select the external workspace, matching private asset checkout and engine. The package script requires matching signature evidence and asset-content fingerprints, then copies complete tested/exported build outputs into external transfer packages and adds SHA-256 sidecars. It does not upload anything to Drive or publish anywhere.
 
 For native graphical input regression, use `-- --touch-test` at the end of the exported game's command line. It uses isolated progress and preferences, dispatches real touch/joypad events, tests multi-finger actions, menus, placement, driving, releases and input handoff, and writes `devices.json` plus screenshots outside public Git. This is automated input coverage, not physical controller or phone performance coverage.
 

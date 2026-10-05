@@ -14,6 +14,8 @@ def main():
    path=home/name
    if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest()!=sha:raise SystemExit('Stale export: '+name)
  linux=home/'builds/cross-platform/linux';binary=linux/'Zombie Slop.x86_64';pck=linux/'Zombie Slop.pck';apk=home/'builds/android/Zombie Slop.apk'
+ verification=json.loads((home/'verification/device-play/android-export.json').read_text())
+ if verification.get('signature_verified') is not True or verification.get('sha256')!=hashlib.sha256(apk.read_bytes()).hexdigest() or verification.get('paired_revisions')!=records[0]['paired_revisions']:raise SystemExit('APK lacks matching successful signature verification; rebuild with build_android.py.')
  if binary.read_bytes()[:4]!=b'\x7fELF' or pck.read_bytes()[:4]!=b'GDPC':raise SystemExit('Missing native Linux executable or Godot pack.')
  output=home/'builds/transfers';output.mkdir(parents=True,exist_ok=True)
  target=output/'Zombie Slop - Steam Deck.zip';temp=target.with_suffix('.zip.tmp');prefix='Zombie Slop/'

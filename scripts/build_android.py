@@ -56,9 +56,10 @@ def main():
  # omits aliases, so inspect the manifest rather than requiring that summary.
  manifest=subprocess.check_output([str(aapt),'dump','xmltree',str(output),'AndroidManifest.xml'],env=env,text=True)
  if not all(value in manifest for value in ['E: activity-alias','com.godot.game.GodotAppLauncher','android.intent.action.MAIN','android.intent.category.LAUNCHER']):raise SystemExit('Missing Android launcher alias.')
+ if 'android.intent.category.HOME' in manifest:raise SystemExit('Game unexpectedly advertises itself as the system home launcher.')
  permissions=subprocess.check_output([str(aapt),'dump','permissions',str(output)],env=env,text=True)
  if 'android.permission.INTERNET' in permissions:raise SystemExit('Personal offline APK unexpectedly requests network permission.')
- record={'apk':str(output),'bytes':output.stat().st_size,'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'paired_revisions':json.loads((runtime/'assembly.json').read_text()),'signature_verification':verified,'package_badging':badging,'launcher_alias_verified':True,'permissions':permissions,'physical_android_tested':False}
+ record={'apk':str(output),'bytes':output.stat().st_size,'sha256':hashlib.sha256(output.read_bytes()).hexdigest(),'paired_revisions':json.loads((runtime/'assembly.json').read_text()),'signature_verified':True,'signature_verification':verified,'package_badging':badging,'launcher_alias_verified':True,'permissions':permissions,'physical_android_tested':False}
  report=home/'verification/device-play';report.mkdir(parents=True,exist_ok=True);(report/'android-export.json').write_text(json.dumps(record,indent=2)+'\n')
  record_export(home,'Android')
  print('Signed APK verified:',output)

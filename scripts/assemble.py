@@ -7,6 +7,12 @@ def outside(path,checkouts):
  """Reject output folders located within either protected checkout."""
  for base in checkouts:
   if path==base or base in path.parents:raise ValueError('Runtime and outputs must be outside both checkouts.')
+def asset_fingerprint(folder):
+ # Engine-generated import metadata is not an asset input. Hash the actual
+ # copied models, textures, recordings and license files in stable path order.
+ files={p.relative_to(folder).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(folder.rglob('*')) if p.is_file() and p.suffix!='.import'}
+ return hashlib.sha256(json.dumps(files,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+
 def main():
  """Validate external inputs and assemble a disposable Godot workspace."""
  p=argparse.ArgumentParser();p.add_argument('--assets',type=Path,default=SOURCE.parent/'zombie-slop-assets');p.add_argument('--home',type=Path,default=Path.home()/'Documents/ZombieSlop');a=p.parse_args()
@@ -102,7 +108,7 @@ def main():
  if missing:raise SystemExit('Missing external assets; run documented Blender generation and pack setup:\n'+'\n'.join(missing))
  code=subprocess.check_output(['git','-C',str(SOURCE),'rev-parse','HEAD'],text=True).strip()
  asset=subprocess.check_output(['git','-C',str(private),'rev-parse','HEAD'],text=True).strip()
- (runtime/'assembly.json').write_text(json.dumps({'code_commit':code,'asset_commit':asset},indent=2)+'\n')
+ (runtime/'assembly.json').write_text(json.dumps({'code_commit':code,'asset_commit':asset,'asset_sha256':asset_fingerprint(assets)},indent=2)+'\n')
  (home/'builds').mkdir(exist_ok=True)
  for platform in ['linux','windows']:(home/'builds/cross-platform'/platform).mkdir(parents=True,exist_ok=True)
  print('Assembled:',runtime)

@@ -53,7 +53,10 @@ func run(owner_game) -> int:
  var height=game.placement_height;await tap("height_up");check(game.placement_height>height,"Touch height control updates placement")
  await capture("placement");await tap("cancel");check(game.placement_kind=="","Touch cancel leaves materials unspent")
  check(game.state.inventory.wood==30 and game.state.inventory.scrap==30,"Cancelled touch placement is transactional")
- var car=game.get_tree().get_nodes_in_group("vehicles")[0];car.enter(game.player);await wait()
+ var cars=game.get_tree().get_nodes_in_group("vehicles")
+ if cars.is_empty():
+  check(false,"World must include a vehicle for driving coverage");return 1
+ var car=cars[0];car.enter(game.player);await wait()
  check(touch.buttons.interact.label=="Exit" and touch.buttons.jump.label=="Brake","Driving exposes exit and brake controls")
  finger(0,center,true);drag(0,center+Vector2(0,-60),Vector2(0,-60));await wait(.3)
  check(absf(car.speed)>.5,"Touch stick accelerates the actual car")
