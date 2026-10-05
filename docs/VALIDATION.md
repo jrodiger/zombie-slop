@@ -1,4 +1,14 @@
-# Current validation — focused carry-arm correction (0.6.1)
+# Current validation — personal Android and Steam Deck exports (0.7.0)
+
+A personally signed ARM64 Android APK runs on an isolated Pixel 7-profile Android 15 emulator with networking disabled. Forty graphical input checks pass there: multi-finger movement/look, aim/fire/reload, inventory, sprint, focus-loss releases, placement rotation/height/cancellation, actual driving, controller-event handoff, returning to touch and Back/menu behavior. Rendered menu, building and gameplay screens were inspected. The emulator uses a software GPU; these results establish Android compatibility, not physical Pixel performance or Bluetooth/USB controller feel.
+
+Android testing exposed a platform-specific first-stick-event failure after virtual input release. Restoring the new physical event's mapped action strength immediately fixes it; a regression checks both takeover and subsequent stick release. The game retains emulated touch clicks for GUI controls while preventing those clicks from firing a gun. Backgrounding saves and pauses, Back closes/cancels/pauses instead of quitting, and menu/context changes clear virtual holds. Menus stay within the landscape viewport and scroll; phone controls include combat, inventory, object recovery, placement and driving.
+
+The native Metal device candidate passes 976 gameplay checks at 1280×800, followed by six fresh-process save/relaunch checks. Source/save validation passes 106 checks, script parsing, the public source audit and audio preflight. Tests use separate saves/preferences. Complete Android/Linux exports are fingerprinted against matching clean code/asset revisions before personal APK and Steam Deck ZIP packaging. Signing credentials, SDKs, assets, builds, PNGs and evidence remain outside public Git. The unchanged private asset checkpoint is recorded in ASSETS.json.
+
+Physical Pixel, physical gamepad and Steam Deck runtime/performance remain unverified. The Linux export is a native x86-64 executable plus its matching Godot pack, not a tested Deck session. There is no store publication or automatic cloud save synchronization. The independently proposed pistol grip is draft PR #8 and is excluded from this update; it awaits explicit user visual acceptance. See [DEVICES.md](DEVICES.md) for installation and controls.
+
+# Prior focused carry-arm validation (0.6.1)
 
 This update changes lowered firearm poses only. The previous carry check accepted a low wrist while missing a backward-folded elbow. A new exported native regression reproduces full-body front/side views with ordinary non-aiming input, then captures close views, actual aim/release transitions and walking/running phases.
 

@@ -5,6 +5,7 @@ const Player=preload("res://game/player.gd")
 const World=preload("res://game/world.gd")
 const Placed=preload("res://game/placed.gd")
 const Hud=preload("res://game/hud.gd")
+const TouchControls=preload("res://game/touch_controls.gd")
 const catalog=preload("res://game/catalog.gd")
 var save_path:String="user://survival.json"
 var state=State.new()
@@ -12,6 +13,7 @@ var assets=Assets.new()
 var player
 var world
 var ui
+var touch
 var running:bool=false
 var overlay:bool=false
 var placement_kind:String=""
@@ -37,12 +39,16 @@ var completed_announced:bool=false
 var open_container_id:String=""
 var inventory_open:bool=false
 func _ready():
+ get_tree().quit_on_go_back=false
+ if "--touch-test" in OS.get_cmdline_user_args():save_path="user://touch-test-survival.json"
  if "--inspection" in OS.get_cmdline_user_args():save_path="user://inspection-survival.json"
  if "--manual-test" in OS.get_cmdline_user_args():save_path="user://manual-test-survival.json"
  if "--integration" in OS.get_cmdline_user_args() or "--verify-load" in OS.get_cmdline_user_args():save_path="user://integration-survival.json"
  if "--benchmark" in OS.get_cmdline_user_args():save_path="user://benchmark-survival.json"
  inputs();load_settings();create_world()
  ui=Hud.new();add_child(ui);ui.configure(self);ui.start_screen();apply_settings()
+ touch=TouchControls.new();ui.root.add_child(touch);touch.configure(self)
+ if OS.has_feature("mobile"):get_viewport().scaling_3d_scale=.75
  # Instantiate the transparent preview during startup, before its first use.
  # Loading a scene alone does not prepare a material_override pipeline.
  var preview_warmup=assets.model("wall");preview_warmup.name="PlacementWarmup";preview_warmup.visible=false
@@ -53,6 +59,7 @@ func _ready():
  if "--benchmark" in OS.get_cmdline_user_args():call_deferred("benchmark")
  if "--verify-load" in OS.get_cmdline_user_args():call_deferred("verify_load")
  if "--inspection" in OS.get_cmdline_user_args():call_deferred("inspection")
+ if "--touch-test" in OS.get_cmdline_user_args():call_deferred("device_test")
 func create_world():
  world=World.new();add_child(world);world.configure(self)
  player=Player.new();add_child(player);player.configure(self);player.position=Vector3(-24,.2,22);player.yaw=PI;player.visual.rotation.y=0
@@ -100,7 +107,8 @@ func bind(action:String,key:int=0,button:int=JOY_BUTTON_INVALID,axis:int=-1,valu
  if key!=0:var e=InputEventKey.new();e.physical_keycode=key;InputMap.action_add_event(action,e)
  if button!=JOY_BUTTON_INVALID:var e=InputEventJoypadButton.new();e.button_index=button;InputMap.action_add_event(action,e)
  if axis>=0:var e=InputEventJoypadMotion.new();e.axis=axis;e.axis_value=value;InputMap.action_add_event(action,e)
- if mouse>0:var e=InputEventMouseButton.new();e.button_index=mouse;InputMap.action_add_event(action,e)
+ # Emulated touch clicks must remain available to menus without firing a gun.
+ if mouse>0 and not OS.has_feature("mobile") and not "--touch-test" in OS.get_cmdline_user_args():var e=InputEventMouseButton.new();e.button_index=mouse;InputMap.action_add_event(action,e)
 func _input(event):
  # Tab is also a GUI focus key. Close the inventory before focused controls
  # consume it, including immediately after selecting another survivor.
@@ -178,7 +186,7 @@ func close_overlay():
  open_container_id="";inventory_open=false
  world.close_containers()
  ui.clear_panel();overlay=false
- if running:Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+ if running:Input.mouse_mode=Input.MOUSE_MODE_VISIBLE if touch!=null and touch.enabled else Input.MOUSE_MODE_CAPTURED
 func die():
  running=false;Input.mouse_mode=Input.MOUSE_MODE_VISIBLE;cancel_placement();ui.death()
 func recover_player():
@@ -200,7 +208,7 @@ func load_game():
  state.settings=preferences
  var notice=state.save_error;rebuild();running=true;close_overlay();toast("Welcome home" if notice=="" else notice)
 func save_settings():
- if "--manual-test" in OS.get_cmdline_user_args():return
+ if "--manual-test" in OS.get_cmdline_user_args() or "--touch-test" in OS.get_cmdline_user_args():return
  var config=ConfigFile.new()
  for key in state.settings:config.set_value("settings",key,state.settings[key])
  config.save("user://settings.cfg")
@@ -217,6 +225,19 @@ func apply_settings():
  if world!=null and world.sun!=null:world.sun.shadow_enabled=bool(state.settings.shadows)
 func quit_game():
  save_settings();finish_run()
+func _notification(what):
+ if what==NOTIFICATION_WM_GO_BACK_REQUEST and ui!=null:
+  if running:
+   if overlay:close_overlay()
+   elif placement_kind!="":cancel_placement()
+   else:ui.pause()
+ elif (what==NOTIFICATION_APPLICATION_PAUSED or what==NOTIFICATION_APPLICATION_FOCUS_OUT) and OS.has_feature("mobile") and running and ui!=null:
+  if touch!=null:touch.release_all()
+  save_game(false)
+  if not overlay:ui.pause()
+func device_test():
+ var suite=load("res://tests/devices.gd").new();add_child(suite)
+ var result=await suite.run(self);finish_run(result)
 func finish_run(code:int=0):
  if ambience!=null:ambience.stop();ambience.stream=null
  for speaker in sound_players:speaker.stop();speaker.stream=null
