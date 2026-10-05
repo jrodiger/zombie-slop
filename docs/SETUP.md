@@ -118,7 +118,7 @@ python3 scripts/test_source.py --godot "$HOME/Documents/ZombieSlop/tools/Godot.a
 ./scripts/run.sh -- --manual-test  # direct controls, separate save, preferences not written
 ```
 
-The first three produce only **local external builds**, including their embedded assets. They must not be added to the public repository, LFS, GitHub releases, or CI artifacts. macOS exports are ad-hoc signed for local use, not notarized. Windows/Linux are cross-exportable; run them on their respective hardware before marking them tested. Steam Deck controls and Android are targets, not verified platforms.
+The first three produce only **local external builds**, including their embedded assets. They must not be added to the public repository, LFS, GitHub releases, or CI artifacts. macOS exports are ad-hoc signed for local use, not notarized. Windows/Linux are cross-exportable; run them on their respective hardware before marking them tested. For the signed Android APK, touch controls and native Steam Deck transfer ZIP, see [DEVICES.md](DEVICES.md). Physical phone/controller/Deck behavior must still be verified on that hardware.
 
 A ten-minute benchmark is included in the exported binary:
 

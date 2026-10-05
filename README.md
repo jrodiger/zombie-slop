@@ -16,3 +16,5 @@ A fresh source clone requires the external asset setup. The script reports missi
 The starter objective asks you to collect supplies and a fern, return home, place your find, and build a barricade or chest. Then keep playing the sandbox. Tab opens an inventory with equipment, supplies and character selection. Eight collectible furniture/decor types and six construction recipes use transactional placement, recovery/refunds, storage and local persistence.
 
 Public workflow uses feature branches and PRs, with current-head CodeRabbit review required before merging. Local development and playtesting do not imply a GitHub review or merge occurred.
+
+For personal Android/Pixel and Steam Deck installation, touch/gamepad controls and transfer packages, see [device instructions](docs/DEVICES.md). Store publishing is unnecessary.

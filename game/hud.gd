@@ -18,6 +18,8 @@ var reticle:Label
 var panel:PanelContainer
 var panel_content:VBoxContainer
 var notice_left:float=0
+func touch_mode() -> bool:
+ return OS.has_feature("mobile") or "--touch-test" in OS.get_cmdline_user_args()
 const INK=Color("101a18")
 const CREAM=Color("e4dfcc")
 const GOLD=Color("e4ba70")
@@ -52,6 +54,11 @@ func configure(owner_game):
   var background=StyleBoxFlat.new();background.bg_color=Color("27382e");background.set_corner_radius_all(3)
   var fill=background.duplicate();fill.bg_color=pair[1]
   pair[0].add_theme_stylebox_override("background",background);pair[0].add_theme_stylebox_override("fill",fill)
+ if touch_mode():
+  controls.hide();bottom.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+  bottom.position=Vector2(28,124);bottom.size=Vector2(340,116)
+  compass.position.y=108;performance.position.y=140
+  prompt.position.y=-278;placement.position.y=-660;placement.size.y=100
 func text(value:String,size:int,color:Color=CREAM) -> Label:
  var l=Label.new();l.text=value;l.add_theme_font_size_override("font_size",size);l.add_theme_color_override("font_color",color);l.mouse_filter=Control.MOUSE_FILTER_IGNORE;return l
 func panel_style() -> StyleBoxFlat:
@@ -73,6 +80,7 @@ func _process(delta):
  placement.visible=game.placement_kind!=""
  if placement.visible:
   placement.text="%s  ·  %s\n%s\nWheel / Q / R  rotate  ·  Shift + wheel  fine (free)\n↑ / ↓  height  ·  + / −  distance  ·  T  snap\nLMB / A  place  ·  Esc / B  cancel"%[game.catalog.ITEMS[game.placement_kind].name,"SNAP" if game.snap else "FREE",game.placement_reason]
+  if touch_mode():placement.text="%s  ·  %s\n%s\nUse Rotate, Raise/Lower, Nearer/Farther and Snap\nPlace confirms  ·  Cancel or Android Back returns"%[game.catalog.ITEMS[game.placement_kind].name,"SNAP" if game.snap else "FREE",game.placement_reason]
   placement.modulate=Color("c0db89") if game.placement_valid else Color("e99279")
  reticle.text="×" if game.hit_feedback>0 else ("+" if game.player.aiming else "·")
  damage.color.a=game.damage_feedback*.55
@@ -86,13 +94,17 @@ func clear_panel():
 func open_panel(title:String,subtitle:String="",wide:bool=false) -> VBoxContainer:
  game.inventory_open=false
  clear_panel();game.overlay=true;hud.visible=false;Input.mouse_mode=Input.MOUSE_MODE_VISIBLE
- panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=Vector2(-460 if wide else -300,-380 if wide else -320);panel.size=Vector2(920 if wide else 600,760 if wide else 640);panel.add_theme_stylebox_override("panel",panel_style());root.add_child(panel)
- panel_content=VBoxContainer.new();panel_content.add_theme_constant_override("separation",10);panel.add_child(panel_content)
+ if game.touch!=null:game.touch.release_all()
+ var extent=get_viewport().get_visible_rect().size
+ var dimensions=Vector2(minf(920 if wide else 600,extent.x-32),minf(760 if wide else 640,extent.y-32))
+ panel=PanelContainer.new();panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER);panel.position=-dimensions/2;panel.size=dimensions;panel.add_theme_stylebox_override("panel",panel_style());root.add_child(panel)
+ var scroll=ScrollContainer.new();scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;scroll.follow_focus=true;panel.add_child(scroll)
+ panel_content=VBoxContainer.new();panel_content.size_flags_horizontal=Control.SIZE_EXPAND_FILL;panel_content.add_theme_constant_override("separation",10);scroll.add_child(panel_content)
  panel_content.add_child(text(title,31,GOLD))
  if subtitle!="":var label=text(subtitle,16);label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;panel_content.add_child(label)
  return panel_content
 func button(value:String,callback:Callable,parent:Node=null) -> Button:
- var b=Button.new();b.text=value;b.alignment=HORIZONTAL_ALIGNMENT_LEFT;b.pressed.connect(func():game.sound("ui",.25);callback.call());(parent if parent!=null else panel_content).add_child(b);return b
+ var b=Button.new();b.text=value;b.alignment=HORIZONTAL_ALIGNMENT_LEFT;b.custom_minimum_size.y=96 if touch_mode() else 52;b.pressed.connect(func():game.sound("ui",.25);callback.call());(parent if parent!=null else panel_content).add_child(b);return b
 func survivor_selector(parent:Node):
  var row=HBoxContainer.new();parent.add_child(row);row.add_child(text("SURVIVOR",16,GOLD))
  var select=OptionButton.new();row.add_child(select);select.size_flags_horizontal=Control.SIZE_EXPAND_FILL;select.size_flags_vertical=Control.SIZE_SHRINK_CENTER;select.custom_minimum_size.y=48
@@ -117,7 +129,7 @@ func pause():
  open_panel("TAKE A BREATH","Game paused. Essential progress is saved locally.")
  button("RESUME",game.close_overlay).grab_focus()
  button("SAVE GAME",game.save_game)
- button("INVENTORY  ·  TAB",backpack)
+ button("INVENTORY" if touch_mode() else "INVENTORY  ·  TAB",backpack)
  button("BUILD / DECORATE",build_menu)
  button("SETTINGS",settings)
  button("RETURN HOME IF STUCK",func():game.recover_player();game.close_overlay())
@@ -163,7 +175,7 @@ func loot_menu(entry:Dictionary):
  (close if first==null else first).grab_focus()
 func backpack():
  if not game.running:return
- open_panel("INVENTORY","Health %d / 100  ·  Tab closes your pack"%game.state.health,true);game.inventory_open=true
+ open_panel("INVENTORY","Health %d / 100  ·  Close or Android Back returns to play"%game.state.health if touch_mode() else "Health %d / 100  ·  Tab closes your pack"%game.state.health,true);game.inventory_open=true
  survivor_selector(panel_content)
  var columns=HBoxContainer.new();columns.add_theme_constant_override("separation",24);columns.size_flags_vertical=Control.SIZE_EXPAND_FILL;panel_content.add_child(columns)
  for section in ["EQUIPMENT & SUPPLIES","FURNISHINGS & MATERIALS"]:
@@ -183,7 +195,7 @@ func backpack():
  var car=game.world.nearest_vehicle(game.player.global_position)
  if car!=null and not car.armored:
   button("FIT VEHICLE ARMOR  ·  2 vehicle parts + 10 scrap",func():car.upgrade();backpack())
- var row=HBoxContainer.new();panel_content.add_child(row);button("BUILD / DECORATE",build_menu,row);button("CLOSE  ·  TAB",game.close_overlay,row).grab_focus()
+ var row=HBoxContainer.new();panel_content.add_child(row);button("BUILD / DECORATE",build_menu,row);button("CLOSE" if touch_mode() else "CLOSE  ·  TAB",game.close_overlay,row).grab_focus()
 func storage_menu(ident:int):
  var record=game.state.find_object(ident)
  if record.is_empty():return

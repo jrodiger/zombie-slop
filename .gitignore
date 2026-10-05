@@ -30,3 +30,7 @@ exports/
 *.tpz
 *.pck
 *.app/
+*.apk
+*.aab
+*.keystore
+*.jks

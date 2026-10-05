@@ -3,7 +3,7 @@
 import subprocess,sys
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-forbidden={'.blend','.blend1','.glb','.gltf','.bin','.fbx','.obj','.mtl','.png','.jpg','.jpeg','.svg','.webp','.wav','.mp3','.ogg','.ttf','.otf','.zip','.tpz','.pck','.mp4','.mov','.tres','.res','.exr','.hdr','.dds','.ico','.icns'}
+forbidden={'.blend','.blend1','.glb','.gltf','.bin','.fbx','.obj','.mtl','.png','.jpg','.jpeg','.svg','.webp','.wav','.mp3','.ogg','.ttf','.otf','.zip','.tpz','.pck','.mp4','.mov','.tres','.res','.exr','.hdr','.dds','.ico','.icns','.apk','.aab','.keystore','.jks'}
 files=subprocess.check_output(['git','-C',str(root),'ls-files','-z'],text=True).split('\0')
 errors=[]
 for name in filter(None,files):

@@ -7,7 +7,7 @@ with tempfile.TemporaryDirectory(prefix='zombie-slop-tests-') as folder:
  root=Path(folder)
  for name in ['game','tests']:shutil.copytree(source/name,root/name)
  (root/'project.godot').write_text('config_version=5\n[application]\nconfig/name="Zombie Slop CI"\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n')
- for script in ['game/game.gd','tests/integration.gd','tests/benchmark.gd','tests/inspection.gd','tests/expansion.gd','tests/district.gd','tests/polish.gd']:
+ for script in ['game/game.gd','tests/integration.gd','tests/benchmark.gd','tests/inspection.gd','tests/expansion.gd','tests/district.gd','tests/polish.gd','tests/devices.gd']:
   result=subprocess.run([a.godot,'--headless','--path',folder,'--check-only','--script','res://'+script],check=False,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
   print(result.stdout,end='')
   # Godot can return zero even when --check-only reports a parse error.
