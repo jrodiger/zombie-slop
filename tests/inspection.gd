@@ -122,9 +122,25 @@ func carry_views():
  var f=FileAccess.open(game.report_dir()+"/carry.json",FileAccess.WRITE)
  f.store_string(JSON.stringify({"cases":cases,"transitions":transitions,"gaits":gaits,"failures":failures,"graphical":DisplayServer.get_name()!="headless"},"  "))
  return 1 if failures else 0
+func pistol_views():
+ # Identical cameras and animation samples for a human-reviewed grip comparison.
+ for character in ["shaun","matt","lis","sam"]:
+  game.change_character(character);game.player.equip("pistol")
+  game.player.position=Vector3(0,.04,100);game.player.visual.rotation.y=0
+  game.player.set_physics_process(false);game.player.motion.legs.pause()
+  for pose in ["LowerIdle","Aim"]:
+   game.player.animation.play(game.player.weapon_clip(pose),0)
+   game.player.animation.seek(.15,true);game.player.animation.pause()
+   await RenderingServer.frame_post_draw
+   var skeleton=game.assets.skeleton(game.player.visual)
+   var target=skeleton.global_transform*skeleton.get_bone_global_pose(skeleton.find_bone("Middle1.L")).origin
+   for view in [{"name":"front","offset":Vector3(-.1,.12,.75)},{"name":"side","offset":Vector3(-.75,.12,.05)},{"name":"rear","offset":Vector3(-.1,.12,-.75)},{"name":"top","offset":Vector3(-.3,.75,.3)}]:
+    await shot(character+"-pistol-"+pose+"-"+view.name,target+view.offset,target,false)
+ return 0
 func run(owner_game):
  game=owner_game;game.new_game();game.player.set_process(false)
  for enemy in get_tree().get_nodes_in_group("zombies"):enemy.set_physics_process(false)
+ if "--pistol-only" in OS.get_cmdline_user_args():return await pistol_views()
  if "--carry-only" in OS.get_cmdline_user_args():return await carry_views()
  if not "--environment-only" in OS.get_cmdline_user_args() and not "--rooms-only" in OS.get_cmdline_user_args():await poses()
  if "--poses-only" in OS.get_cmdline_user_args():return 0
